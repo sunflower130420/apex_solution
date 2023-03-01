@@ -12,3 +12,4 @@ Cargo.lock
 *.so
 .vscode/
 *.7z
+*.exe

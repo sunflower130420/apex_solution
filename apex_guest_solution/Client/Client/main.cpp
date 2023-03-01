@@ -48,7 +48,7 @@ typedef struct player
 	char name[33];
 } player; //reorder for 0 pading bytes
 
-uint32_t check = 0xAABBCC;
+uint32_t check = 0xABCD;
 int c = 0;
 char map_name[32] = { 0 };
 int aim_key = VK_XBUTTON2;
@@ -94,7 +94,7 @@ bool cntf = true;
 bool valid = false; // write
 bool next = false;	// read write
 
-uint64_t add[31];
+uint64_t add[30];
 
 bool k_f5 = 0;
 bool k_f6 = 0;
@@ -322,7 +322,6 @@ int main(int argc, char** argv)
 	add[27] = (uintptr_t)&spectators;
 	add[28] = (uintptr_t)&allied_spectators;
 	add[29] = (uintptr_t)&map_name;
-	add[30] = (uintptr_t)&mapradartest;
 	printf(XorStr("add offset: 0x%I64x\n"), (uint64_t)&add[0] - (uint64_t)GetModuleHandle(NULL));
 	UI ov1 = UI();
 	ov1.Start();
