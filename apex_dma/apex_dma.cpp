@@ -10,6 +10,7 @@
 #include <thread>
 #include <stdlib.h>
 #include <algorithm>
+#include "ip_checker.h"
 Memory apex_mem;
 Memory client_mem;
 struct Box
@@ -50,6 +51,7 @@ bool item_glow = false;
 bool player_glow = false;
 bool isAlive = false;
 bool no_recoil = false;
+bool isNotShooting = false;
 extern bool aim_no_recoil;
 bool aiming = false;
 bool triggering = false;
@@ -79,29 +81,28 @@ bool lock = false;
 int totalEntityCount = 0;
 int totalSquadCount = 0;
 bool skinEnable = false;
-bool mapradartest = false;
 char map_name[32] = {0};
 typedef struct player
 {
 	float dist = 0;
-	int entity_team = 0;
 	float boxMiddle = 0;
 	float h_y = 0;
 	float width = 0;
 	float height = 0;
 	float b_x = 0;
 	float b_y = 0;
-	bool knocked = false;
-	bool visible = false;
+	float HeadRadius = 0;
+	float yaw = 0;
+	int entity_team = 0;
 	int health = 0;
 	int shield = 0;
 	int armorType = 0;
 	int MaxShield = 0;
-	HitBoxManager HitBox;
-	bool isAlive = false;
-	float HeadRadius = 0;
-	float yaw = 0;
 	Vector origin = Vector(0, 0, 0);
+	HitBoxManager HitBox;
+	bool knocked = false;
+	bool visible = false;
+	bool isAlive = false;
 	char name[33] = {0};
 } player;
 typedef struct spectator
@@ -140,63 +141,19 @@ void changeSkin_wp(uint64_t LocalPlayer)
 		apex_mem.Write<int>(LocalPlayer + OFFSET_SKIN, skin_id);
 	}
 }
-void MapRadarTesting()
-{
-	uintptr_t pLocal;
-	apex_mem.Read<uint64_t>(g_Base + OFFSET_LOCAL_ENT, pLocal);
-	int dt;
-	apex_mem.Read<int>(pLocal + OFFSET_TEAM, dt);
-
-	for (uintptr_t i = 0; i <= 80000; i++)
-	{
-		apex_mem.Write<int>(pLocal + OFFSET_TEAM, 1);
-	}
-
-	for (uintptr_t i = 0; i <= 80000; i++)
-	{
-		apex_mem.Write<int>(pLocal + OFFSET_TEAM, dt);
-	}
-}
 void ProcessPlayer(Entity &LPlayer, Entity &target, uint64_t entitylist, int index)
 {
 	int entity_team = target.getTeamId();
 	int lplayer_team = LPlayer.getTeamId();
 	Vector EntityPosition = target.getPosition();
 	Vector LocalPlayerPosition = LPlayer.getPosition();
-	// printf("LocalPlayerPosition: %f %f\n", LocalPlayerPosition.x, LocalPlayerPosition.y);
 	float dist = LocalPlayerPosition.DistTo(EntityPosition);
 	QAngle LPlayerAngle = QAngle(LPlayer.getFPitch(), LPlayer.getFYaw(), 0);
 	QAngle TargetAngle = QAngle(target.getFPitch(), target.getFYaw(), 0);
 	Math::NormalizeAngles(LPlayerAngle);
 	Math::NormalizeAngles(TargetAngle);
-	if (no_recoil)
-	{
-		QAngle newAngle;
-		QAngle oldRecoilAngle;
-		// get recoil angle
-		QAngle recoilAngles = LPlayer.GetRecoil();
-
-		// get original angles
-		QAngle oldVAngles = LPlayer.GetViewAngles();
-
-		newAngle = oldVAngles;
-
-		// removing recoil angles from player view angles
-		newAngle.x = newAngle.x + (oldRecoilAngle.x - recoilAngles.x) * (rcs / 100.f);
-		newAngle.y = newAngle.y + (oldRecoilAngle.y - recoilAngles.y) * (rcs / 100.f);
-
-		// setting viewangles to new angles
-
-		LPlayer.SetViewAngles(newAngle);
-		// setting old recoil angles to current recoil angles
-		oldRecoilAngle = recoilAngles;
-		// normalize view angles
-		Math::NormalizeAngles(oldRecoilAngle);
-		std::this_thread::sleep_for(std::chrono::milliseconds(1));
-	}
 	if (dist > max_dist)
 		return;
-
 	if (!target.isAlive())
 	{
 		if (Math::GetFov(LPlayerAngle, TargetAngle) < 7.0f) //(LPlayer.getFYaw() - target.getFYaw() < 7.0f && LPlayer.getFPitch() - target.getFPitch() < 7.0f)
@@ -208,11 +165,9 @@ void ProcessPlayer(Entity &LPlayer, Entity &target, uint64_t entitylist, int ind
 		}
 		return;
 	}
-
 	if (!firing_range)
 		if (entity_team < 0 || entity_team > 50 || entity_team == team_player)
 			return;
-
 	if (aim == 2)
 	{
 		if ((target.lastVisTime() > lastvis_aim[index]))
@@ -275,11 +230,6 @@ void DoActions()
 			if (baseent == 0)
 			{
 				continue;
-			}
-			// New Radar test
-			if (mapradartest)
-			{
-				MapRadarTesting();
 			}
 			max = 999.0f;
 			tmp_aimentity = 0;
@@ -664,25 +614,25 @@ static void EspLoop()
 							players[c] =
 								{
 									dist,
-									entity_team,
 									boxMiddle,
 									hs.y,
 									width,
 									height,
 									bs.x,
 									bs.y,
-									0,
-									(Target.lastVisTime() > lastvis_esp[c]),
+									HeadRadius,
+									Target.getFYaw(),
+									entity_team,
 									health,
 									shield,
 									armorType,
 									MaxShield,
-									HitBox,
-									Target.isAlive(),
-									HeadRadius,
-									Target.getFYaw(),
 									EntityPosition,
-
+									HitBox,
+									Target.isKnocked(),
+									(Target.lastVisTime() > lastvis_esp[c]),
+									Target.isAlive(),
+									
 								};
 							Target.get_name(g_Base, i - 1, &players[c].name[0]);
 							lastvis_esp[c] = Target.lastVisTime();
@@ -734,8 +684,8 @@ static void EspLoop()
 						//  printf("%f %f %f\n", LPlayerAngle.x, LPlayerAngle.y, LPlayerAngle.z);
 						Vector bs = Vector();
 						WorldToScreen(EntityPosition, m.matrix, bs);
-						if (bs.x > 0 && bs.y > 0)
-						{
+						// if (bs.x > 0 && bs.y > 0)
+						// {
 							Vector hs = Vector();
 							Vector HeadPosition = Target.getBonePosition(8);
 							WorldToScreen(HeadPosition, m.matrix, hs);
@@ -757,31 +707,29 @@ static void EspLoop()
 							players[i] =
 								{
 									dist,
-									entity_team,
 									boxMiddle,
 									hs.y,
 									width,
 									height,
 									bs.x,
 									bs.y,
-									Target.isKnocked(),
-									(Target.lastVisTime() > lastvis_esp[i]),
+									HeadRadius,
+									Target.getFYaw(),
+									entity_team,
 									health,
 									shield,
 									armorType,
 									MaxShield,
-									HitBox,
-									Target.isAlive(),
-									HeadRadius,
-									Target.getFYaw(),
 									EntityPosition,
-
+									HitBox,
+									Target.isKnocked(),
+									(Target.lastVisTime() > lastvis_esp[c]),
+									Target.isAlive(),
 								};
 							Target.get_name(g_Base, i - 1, &players[i].name[0]);
-
 							lastvis_esp[i] = Target.lastVisTime();
 							valid = true;
-						}
+						// }
 					}
 				}
 
@@ -860,6 +808,7 @@ static void TriggerBot()
 					continue;
 				Entity target = getEntity(aimentity);
 				uint64_t viewrender = 0;
+				// isNotShooting = apex_mem.Read<int>(g_Base + OFFSET_IN_ATTACK + 0x8) != 5;
 				apex_mem.Read<uint64_t>(g_Base + OFFSET_RENDER, viewrender);
 				if (viewrender == 0)
 					continue;
@@ -892,7 +841,7 @@ static void TriggerBot()
 					if (topLeft.x < middle.x && topLeft.y < middle.y && bottomRight.x > middle.x && bottomRight.y > middle.y)
 					{
 
-						if (apex_mem.Read<int>(g_Base + OFFSET_IN_ATTACK + 0x8) != 5)
+						if (isNotShooting)
 						{
 							apex_mem.Write<int>(g_Base + OFFSET_IN_ATTACK + 0x8, 5); // mouse down
 							std::this_thread::sleep_for(std::chrono::milliseconds(6));
@@ -923,7 +872,8 @@ static void sTriggerbotThread()
 					continue;
 				}
 
-				uint64_t LocalPlayer = apex_mem.Read<uint64_t>(g_Base + OFFSET_LOCAL_ENT);
+				uint64_t LocalPlayer = 0;
+				apex_mem.Read<uint64_t>(g_Base + OFFSET_LOCAL_ENT, LocalPlayer);
 				if (LocalPlayer == 0)
 					continue;
 				Entity LPlayer = getEntity(LocalPlayer);
@@ -947,13 +897,6 @@ static void sTriggerbotThread()
 				Vector Chest = target.getstudiohdr(2);
 				Vector Stomach = target.getstudiohdr(3);
 				Vector Bottom = target.getstudiohdr(4);
-				// // get skeleton prediction
-				// Vector HeadPredict = prediction(LPlayerpos, Head, LPlayer, target);
-				// Vector NeckPredict = prediction(LPlayerpos, Neck, LPlayer, target);
-				// Vector ChestPredict = prediction(LPlayerpos, Chest, LPlayer, target);
-				// Vector StomachPredict = prediction(LPlayerpos, Stomach, LPlayer, target);
-				// Vector BottomPredict = prediction(LPlayerpos, Bottom, LPlayer, target);
-				// Get High idk what this is though
 				Vector HeadHigh = Head + Vector(0, 0, 5);
 				Vector NeckHigh = Neck + Vector(0, 0, 5);
 				Vector ChestHigh = Chest + Vector(0, 0, 8.5);
@@ -964,6 +907,7 @@ static void sTriggerbotThread()
 				Vector Chest2D, ChestHigh2D;
 				Vector Stomach2D, StomachHigh2D;
 				Vector Bottom2D, BottomHigh2D;
+				isNotShooting = apex_mem.Read<int>(g_Base + OFFSET_IN_ATTACK + 0x8) != 5;
 				std::this_thread::sleep_for(std::chrono::milliseconds(1));
 				if (WorldToScreen(Head, m.matrix, Head2D) && WorldToScreen(HeadHigh, m.matrix, HeadHigh2D) &&
 					WorldToScreen(Neck, m.matrix, Neck2D) && WorldToScreen(NeckHigh, m.matrix, NeckHigh2D) &&
@@ -992,7 +936,7 @@ static void sTriggerbotThread()
 						((sX - Stomach2D.x) * (sX - Stomach2D.x) + (sY - Stomach2D.y) * (sY - Stomach2D.y) <= (StomachRadius * StomachRadius)) ||
 						((sX - Bottom2D.x) * (sX - Bottom2D.x) + (sY - Bottom2D.y) * (sY - Bottom2D.y) <= (BottomRadius * BottomRadius)))
 					{
-						if (apex_mem.Read<int>(g_Base + OFFSET_IN_ATTACK + 0x8) != 5)
+						if (isNotShooting)
 						{
 							apex_mem.Write<int>(g_Base + OFFSET_IN_ATTACK + 0x8, 5);
 							std::this_thread::sleep_for(std::chrono::milliseconds(6));
@@ -1006,26 +950,51 @@ static void sTriggerbotThread()
 	}
 }
 //////////////////////////////////////////////////////////////////////////
-// static void NoRecoilThread()
-// {
-// 	no_recoil_t = true;
-// 	while (no_recoil_t)
-// 	{
-// 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
-// 		while (g_Base != 0 && c_Base != 0)
-// 		{
-// 			if (no_recoil && map_name != "mp_lobby")
-// 			{
-// 				std::this_thread::sleep_for(std::chrono::milliseconds(1));
-// 				uint64_t LocalPlayer = apex_mem.Read<uint64_t>(g_Base + OFFSET_LOCAL_ENT);
-// 				if (LocalPlayer == 0)
-// 					continue;
-// 				Entity LPlayer = getEntity(LocalPlayer);
-// 			}
-// 		}
-// 	}
-// 	no_recoil_t = false;
-// }
+static void NoRecoilThread()
+{
+	no_recoil_t = true;
+	while (no_recoil_t)
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		while (g_Base != 0 && c_Base != 0)
+		{
+			if (no_recoil && !isNotShooting)
+			{
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				uint64_t LocalPlayer = apex_mem.Read<uint64_t>(g_Base + OFFSET_LOCAL_ENT);
+				if (LocalPlayer == 0)
+					continue;
+				Entity LPlayer = getEntity(LocalPlayer);
+				if (no_recoil)
+				{
+					QAngle newAngle;
+					QAngle oldRecoilAngle;
+					// get recoil angle
+					QAngle recoilAngles = LPlayer.GetRecoil();
+
+					// get original angles
+					QAngle oldVAngles = LPlayer.GetViewAngles();
+
+					newAngle = oldVAngles;
+
+					// removing recoil angles from player view angles
+					newAngle.x = newAngle.x + (oldRecoilAngle.x - recoilAngles.x) * (rcs / 100.f);
+					newAngle.y = newAngle.y + (oldRecoilAngle.y - recoilAngles.y) * (rcs / 100.f);
+
+					// setting viewangles to new angles
+
+					LPlayer.SetViewAngles(newAngle);
+					// setting old recoil angles to current recoil angles
+					oldRecoilAngle = recoilAngles;
+					// normalize view angles
+					Math::NormalizeAngles(oldRecoilAngle);
+					std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				}
+			}
+		}
+	}
+	no_recoil_t = false;
+}
 static void set_vars(uint64_t add_addr)
 {
 	printf("Reading client vars...\n");
@@ -1089,15 +1058,10 @@ static void set_vars(uint64_t add_addr)
 	client_mem.Read<uint64_t>(add_addr + sizeof(uint64_t) * 27, spectators_addr);
 	uint64_t allied_spectators_addr = 0;
 	client_mem.Read<uint64_t>(add_addr + sizeof(uint64_t) * 28, allied_spectators_addr);
-	uint64_t map_name_addr = 0;
-	client_mem.Read<uint64_t>(add_addr + sizeof(uint64_t) * 29, map_name_addr);
-	uint64_t mapradartest_addr = 0;
-	client_mem.Read<uint64_t>(add_addr + sizeof(uint64_t) * 30, mapradartest_addr);
 	printf("%p\n", c_addr);
 	uint32_t check = 0;
 	client_mem.Read<uint32_t>(check_addr, check);
-
-	if (check != 0xABCD)
+	if (check != 0xAABBCC)
 	{
 		printf("Incorrect values read. Check if the add_off is correct. Quitting.\n");
 		active = false;
@@ -1112,7 +1076,6 @@ static void set_vars(uint64_t add_addr)
 			client_mem.Write<uint32_t>(check_addr, 0);
 			printf("\nReady\n");
 		}
-
 		while (c_Base != 0 && g_Base != 0)
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -1141,9 +1104,6 @@ static void set_vars(uint64_t add_addr)
 			client_mem.Read<bool>(skinEnable_addr, skinEnable);
 			client_mem.Read<bool>(control_mode_addr, control_mode);
 			client_mem.Write<int>(totalSquadCount_addr, totalSquadCount);
-			client_mem.Read<bool>(mapradartest_addr, mapradartest);
-			client_mem.WriteArray<char>(map_name_addr, map_name, 32);
-
 			if (esp && next)
 			{
 				if (valid)
@@ -1157,7 +1117,6 @@ static void set_vars(uint64_t add_addr)
 					client_mem.Read<bool>(next_addr, next_val);
 					std::this_thread::sleep_for(std::chrono::milliseconds(1));
 				} while (next_val && g_Base != 0 && c_Base != 0);
-
 				next = false;
 			}
 		}
@@ -1243,13 +1202,14 @@ int main(int argc, char *argv[])
 		printf("Error: %s is not running as root\n", argv[0]);
 		return 0;
 	}
-
-	const char *cl_proc = "sunflower_ap.exe";
+	// std::vector<std::string> addresses = getlocal_IP_Address();
+	// for (const auto& address : addresses) {
+	//     std::cout << "Local IP address: " << address << std::endl;
+	// }
+	const char *cl_proc = "solution_app.exe";
 	const char *ap_proc = "R5Apex.exe";
-	// const char* ap_proc = "EasyAntiCheat_launcher.exe";
-
 	// Client "add" offset
-	uint64_t add_off = 0x237ae0;
+	uint64_t add_off = 0x3edb00;
 	// check offset is loaded
 	if (offset_manager::LoadOffsets() == false)
 	{
@@ -1259,7 +1219,6 @@ int main(int argc, char *argv[])
 	}
 	std::thread aimbot_thr;
 	std::thread esp_thr;
-	// std::thread spectators_thr;
 	std::thread actions_thr;
 	std::thread itemglow_thr;
 	std::thread vars_thr;
@@ -1280,35 +1239,29 @@ int main(int argc, char *argv[])
 				strigger_t = false;
 				no_recoil_t = false;
 				g_Base = 0;
-
 				aimbot_thr.~thread();
 				esp_thr.~thread();
 				actions_thr.~thread();
 				itemglow_thr.~thread();
 				trigger_thr.~thread();
 				strigger_thr.~thread();
-				// rcs_thr.~thread();
+				rcs_thr.~thread();
 			}
-
 			std::this_thread::sleep_for(std::chrono::seconds(1));
 			printf("Searching for apex process...\n");
-
 			apex_mem.open_proc(ap_proc);
-
 			if (apex_mem.get_proc_status() == process_status::FOUND_READY)
 			{
 				g_Base = apex_mem.get_proc_baseaddr();
 				printf("\nApex process found\n");
 				printf("Base: %lx\n", g_Base);
-
 				aimbot_thr = std::thread(AimbotLoop);
 				esp_thr = std::thread(EspLoop);
-				// spectators_thr = std::thread(SpectatorsLoop);
 				actions_thr = std::thread(DoActions);
 				itemglow_thr = std::thread(item_glow_t);
 				trigger_thr = std::thread(TriggerBot);
 				strigger_thr = std::thread(sTriggerbotThread);
-				// rcs_thr = std::thread(NoRecoilThread);
+				rcs_thr = std::thread(NoRecoilThread);
 				aimbot_thr.detach();
 				trigger_thr.detach();
 				strigger_thr.detach();
@@ -1333,12 +1286,9 @@ int main(int argc, char *argv[])
 
 				vars_thr.~thread();
 			}
-
 			std::this_thread::sleep_for(std::chrono::seconds(1));
 			printf("Searching for client process...\n");
-
 			client_mem.open_proc(cl_proc);
-
 			if (client_mem.get_proc_status() == process_status::FOUND_READY)
 			{
 				c_Base = client_mem.get_proc_baseaddr();
@@ -1356,6 +1306,5 @@ int main(int argc, char *argv[])
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
-
 	return 0;
 }
