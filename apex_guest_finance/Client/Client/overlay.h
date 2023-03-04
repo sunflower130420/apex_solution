@@ -63,7 +63,6 @@ public:
 	int getWidth();
 	int getHeight();
 	void RenderMenu();
-	void RenderSpec();
 	void RenderEsp();
 	void ClickThrough(bool v);
 	void WindowInfo();

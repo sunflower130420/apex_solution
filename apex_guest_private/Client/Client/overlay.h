@@ -1,4 +1,3 @@
-#pragma once
 #include <Windows.h>
 #include <WinUser.h>
 #include <Dwmapi.h> 
@@ -28,6 +27,13 @@
 extern char map_name[32];
 typedef struct visuals
 {
+	float SkeltonPx = 1.0f;
+	int radar_shadow_alpha = 100;
+	int radar_shadow_color = 75;
+	int radar_shadow_size = 3;
+	int radar_arrow_size = 12;
+	int radar_teamId_y = 20;
+	int tab = 1;
 	bool box = false;
 	bool cornerbox = false;
 	bool line = false;
@@ -39,19 +45,11 @@ typedef struct visuals
 	bool skeleton = false;
 	bool simplespec = true;
 	bool spectator = false;
-	float SkeltonPx = 1.0f;
 	bool FOV = false;
 	bool spectator_id = false;
 	bool radar_map = true;
-	int radar_shadow_alpha = 100;
-	int radar_shadow_color = 75;
-	int radar_shadow_size = 3;
-	int radar_arrow_size = 12;
 	bool radar_show_teamId = true;
-	int radar_teamId_y = 20;
 	bool radar_arrow_shadow = true;
-	int tab = 1;
-
 }visuals;
 
 class UI
@@ -79,6 +77,7 @@ public:
 	void DrawQuadFilled(ImVec2 p1, ImVec2 p2, ImVec2 p3, ImVec2 p4, ImColor color);
 	void DrawHexagon(const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, const ImVec2& p4, const ImVec2& p5, const ImVec2& p6, ImU32 col, float thickness);
 	void DrawHexagonFilled(const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, const ImVec2& p4, const ImVec2& p5, const ImVec2& p6, ImU32 col);
+	void DrawOffScreenEnemies();
 	void DrawSeerLikeHealth(float x, float y, int shield, int max_shield, int armorType, int health, float size);
 	void RainBow();
 	void DrawFilledArrow(float x, float y, float size, ImColor color, float yaw);

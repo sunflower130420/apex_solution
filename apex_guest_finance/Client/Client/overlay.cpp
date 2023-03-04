@@ -104,23 +104,25 @@ void UI::RenderMenu()
 		aim_enable = false;
 		vis_check = false;
 	}
-	ImGui::SetNextWindowSize(ImVec2(520.000f, 280.000f), ImGuiCond_Once);
+	ImGui::SetNextWindowSize(ImVec2(620.000f, 480.000f), ImGuiCond_Once);
 	ImGui::Begin(XorStr("Sunflower Apex"), NULL, 58);
-	ImGui::Columns(2);
-	ImGui::SetColumnOffset(1, 120);
 
 	// left side
 	if (ImGui::Button(XorStr("Main"), ImVec2(110, 0)))
 		v.tab = 1;
+	ImGui::SameLine();
 	if (ImGui::Button(XorStr("Visuals"), ImVec2(110, 0)))
 		v.tab = 2;
+	ImGui::SameLine();
+
 	if (ImGui::Button(XorStr("Config"), ImVec2(110, 0)))
 		v.tab = 3;
 	// right side
-	ImGui::NextColumn();
 	switch (v.tab)
 	{
 	case 1: // Main
+		ImGui::Text(XorStr("Main options:"));
+		ImGui::Separator();
 		ImGui::Checkbox(XorStr("ESP"), &esp);
 		ImGui::Checkbox(XorStr("AIM"), &aim_enable);
 		if (aim_enable)
@@ -153,6 +155,7 @@ void UI::RenderMenu()
 		break;
 	case 2: // Visuals
 		ImGui::Text(XorStr("ESP options:"));
+		ImGui::Separator();
 		ImGui::Checkbox(XorStr("Box"), &v.box);
 		ImGui::SameLine(0, 70.0f);
 		ImGui::Checkbox(XorStr("CornerBox"), &v.cornerbox);
@@ -167,7 +170,9 @@ void UI::RenderMenu()
 		ImGui::Checkbox(XorStr("Shield bar"), &v.shieldbar);
 		break;
 	case 3: //Configs
+		ImGui::Text(XorStr("Config options:"));
 		ImGui::Text(XorStr("Max distance:"));
+		ImGui::Separator();
 		ImGui::SliderFloat(XorStr("##1"), &espDist, 100.0f, 15000.0f, XorStr("%.2f"));
 		ImGui::SameLine();
 		ImGui::Text(XorStr("(%d meters)"), (int)(espDist));
@@ -183,7 +188,6 @@ void UI::RenderMenu()
 		ImGui::SliderFloat(XorStr("##5"), &rcs, 0, 100);
 		break;
 	}
-	ImGui::Columns(1);
 	ImGui::Text(XorStr("Overlay FPS: %.3f ms/frame (%.1f FPS)"), 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 	ImGui::End();
 }

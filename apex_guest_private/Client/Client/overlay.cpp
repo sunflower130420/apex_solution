@@ -104,16 +104,17 @@ void UI::RenderMenu()
 		aim_enable = false;
 		vis_check = false;
 	}
-	ImGui::SetNextWindowSize(ImVec2(520.000f, 280.000f), ImGuiCond_Once);
+	ImGui::SetNextWindowSize(ImVec2(480.000f, 280.000f), ImGuiCond_Once);
 	///////////////////////////
 	ImGui::Begin(XorStr("Apex"), NULL, 58);
-	if (ImGui::Button(XorStr("Main"), ImVec2(100, 0)))
+	ImGui::Separator();
+	if (ImGui::Button(XorStr("Main"), ImVec2(150, 0)))
 		v.tab = 1;
 	ImGui::SameLine();
-	if (ImGui::Button(XorStr("Visuals"), ImVec2(100, 0)))
+	if (ImGui::Button(XorStr("Visuals"), ImVec2(150, 0)))
 		v.tab = 2;
 	ImGui::SameLine();
-	if (ImGui::Button(XorStr("Config"), ImVec2(100, 0)))
+	if (ImGui::Button(XorStr("Config"), ImVec2(150, 0)))
 		v.tab = 3;
 	ImGui::Separator();
 	///////////////////////////
@@ -516,7 +517,10 @@ void UI::DrawHexagonFilled(const ImVec2& p1, const ImVec2& p2, const ImVec2& p3,
 {
 	ImGui::GetWindowDrawList()->AddHexagonFilled(p1, p2, p3, p4, p5, p6, col);
 }
+void UI::DrawOffScreenEnemies()
+{
 
+}
 void UI::DrawSeerLikeHealth(float x, float y, int shield, int max_shield, int armorType, int health, float size) {
 
 	int bg_offset = 3 / size;

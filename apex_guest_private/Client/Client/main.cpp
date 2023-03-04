@@ -48,7 +48,7 @@ typedef struct player
 	char name[33];
 } player; //reorder for 0 pading bytes
 
-uint32_t check = 0xAABBCC;
+uint32_t check = 0xABCD;
 int c = 0;
 char map_name[32] = { 0 };
 int aim_key = VK_XBUTTON2;
@@ -326,7 +326,7 @@ int main(int argc, char** argv)
 	UI ov1 = UI();
 	ov1.Start();
 	printf(XorStr("Waiting for host process...\n"));
-	while (check == 0xAABBCC)
+	while (check == 0xABCD)
 	{
 		if (IsKeyDown(VK_F4))
 		{
