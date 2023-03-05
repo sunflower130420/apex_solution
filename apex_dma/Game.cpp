@@ -193,9 +193,8 @@ bool Entity::isPlayer()
 bool Entity::isDummy()
 {
 	char class_name[33] = {};
-	get_class_name(ptr, class_name);
-
-	return strncmp(class_name, "CAI_BaseNPC", 11) == 0;
+	get_sig_name(class_name);
+	return strstr(class_name, "npc_dummie");
 }
 
 bool Entity::isKnocked()
@@ -279,7 +278,7 @@ void Entity::enableGlow()
 	// apex_mem.Write<int>(ptr + OFFSET_GLOW_T1, 16256);
 	// apex_mem.Write<int>(ptr + OFFSET_GLOW_T2, 1193322764);
 	apex_mem.Write<int>(ptr + OFFSET_GLOW_ENABLE, 1);
-	apex_mem.Write<int>(ptr + OFFSET_GLOW_THROUGH_WALLS, 1);
+	apex_mem.Write<int>(ptr + OFFSET_GLOW_THROUGH_WALLS, 2);
 }
 void Item::enableGlowItem()
 {
@@ -329,6 +328,13 @@ void Entity::get_name(uint64_t g_Base, uint64_t index, char *name)
 	uint64_t name_ptr = 0;
 	apex_mem.Read<uint64_t>(g_Base + OFFSET_NAME_LIST + index, name_ptr);
 	apex_mem.ReadArray<char>(name_ptr, name, 32);
+}
+void Entity::get_sig_name(char *name)
+{
+	uint64_t name_ptr = 0;
+	apex_mem.Read<uint64_t>(ptr + 0x0580, name_ptr);
+	apex_mem.ReadArray<char>(name_ptr, name, 32);
+	
 }
 void Entity::NullName(uint64_t g_Base, uint64_t index)
 {

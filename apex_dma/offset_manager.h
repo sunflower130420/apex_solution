@@ -263,6 +263,13 @@ bool offset_manager::LoadOffsets()
         printf("Failed to load m_currentFramePlayer.m_ammoPoolCount offset\n");
         success = false;
     }
+    // offsets::OFFSET_CLIENT_NAME = ini.GetStringValue("Miscellaneous", "ClientName", "");
+    // printf("ClientName: %s \n", offsets::OFFSET_CLIENT_NAME);
+    // if (offsets::OFFSET_CLIENT_NAME == "")
+    // {
+    //     printf("Failed to load ClientName offset\n");
+    //     success = false;
+    // }
     OFFSET_FPITCH = OFFSET_FYAW - 0x4;
     OFFSET_FROLL = OFFSET_FYAW + 0x4;
     OFFSET_BREATH_ANGLES = OFFSET_VIEWANGLES - 0x10;

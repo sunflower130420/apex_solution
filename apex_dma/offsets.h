@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <string>
 namespace offsets
 {
     inline uint64_t OFFSET_ENTITYLIST = 0x0;          // cl_entitylist
@@ -66,4 +67,5 @@ namespace offsets
     inline uint64_t OFFSET_FYAW = 0x0; // m_currentFramePlayer.m_ammoPoolCount - 0x8
     inline uint64_t OFFSET_FPITCH = OFFSET_FYAW - 0x4;
     inline uint64_t OFFSET_FROLL = OFFSET_FYAW + 0x4;
+    inline std::string OFFSET_CLIENT_NAME = ""; // [Miscellaneous] -> ClientName
 };

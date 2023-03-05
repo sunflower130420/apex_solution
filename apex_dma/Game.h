@@ -61,7 +61,7 @@ public:
 	Vector GetViewAnglesV();
 	QAngle GetCamAngles();
 	void enableGlow();
-
+	void get_sig_name(char *name);
 	void disableGlow();
 	void SetViewAngles(SVector angles);
 	void SetViewAngles(QAngle &angles);

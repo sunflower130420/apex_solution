@@ -82,6 +82,7 @@ int totalEntityCount = 0;
 int totalSquadCount = 0;
 bool skinEnable = false;
 char map_name[32] = {0};
+bool armorbaseglow = true;
 typedef struct player
 {
 	float dist = 0;
@@ -114,7 +115,6 @@ float lastvis_esp[toRead];
 float lastvis_aim[toRead];
 int tmp_spec = 0, spectators = 0;
 int tmp_all_spec = 0, allied_spectators = 0;
-
 void changeSkin_wp(uint64_t LocalPlayer)
 {
 	if (wp_skin_id < 0)
@@ -210,7 +210,6 @@ void DoActions()
 		while (g_Base != 0 && c_Base != 0)
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(30));
-
 			uint64_t LocalPlayer = 0;
 			apex_mem.Read<uint64_t>(g_Base + OFFSET_LOCAL_ENT, LocalPlayer);
 			if (LocalPlayer == 0)
@@ -274,8 +273,13 @@ void DoActions()
 
 					if (player_glow && !Target.isGlowing())
 					{
-						float currentEntityTime = 60000.f;	 // ADDED currentEntityTime
-						GlowMode mode = {101, 102, 10, 100}; // { 101,102,50,75 }; //
+						unsigned char entityVisible = 1;
+						unsigned int state = 25;
+						unsigned char afterPostProcess = 1;
+						int glow_flags = (entityVisible << 6) | state & 0x3F | (afterPostProcess << 7);
+						BYTE glow_flags2 = reinterpret_cast<BYTE &>(glow_flags);
+						float currentEntityTime = 60000.f;			// ADDED currentEntityTime
+						GlowMode mode = {114, 169, 0, glow_flags2}; // { 101,102,50,75 }; //GeneralGlowMode, BorderGlowMode, BorderSize, TransparentLevel
 						GColor color;
 
 						if ((int)Target.buffer[OFFSET_GLOW_ENABLE] != 1 || (int)Target.buffer[OFFSET_GLOW_THROUGH_WALLS] != 1 || (int)Target.buffer[OFFSET_GLOW_FADE] != 872415232)
@@ -286,41 +290,42 @@ void DoActions()
 
 								if (Target.isBleedOut() || !Target.isAlive())
 								{
-									color = {27.f, 27.f, 0.f}; // Downed enemy - Yellow
+									color = {3, 3, 0}; // Downed enemy - Yellow
 								}
 								else
 								{
 									if (shield > 100)
 									{ // Heirloom armor - Red
-										color = {30.f, 0.f, 0.f};
+										color = {3, 0, 0};
 									}
 									else if (shield > 75)
 									{ // Purple armor - Purple
-										color = {16.56, 4.14f, 18.63f};
+										color = {1, 0, 2};
 									}
 									else if (shield > 50)
 									{ // Blue armor - Light blue
-										color = {3.51, 10.53f, 25.65f};
+										color = {0, 1, 2};
 									}
 									else if (shield > 0)
 									{ // White armor - White
-										color = {27.f, 27.f, 27.f};
+										color = {3, 3, 3};
 									}
 									else if (health < 50)
 									{ // Above 50% HP - Orange
-										color = {33.3f, 21.5f, 0.f};
+										color = {3, 2, 0};
 									}
 									else
 									{ // Below 50% HP - Green
-										color = {0.f, 27.f, 0.f};
+										color = {0, 3, 0};
 									}
 								}
 							}
 						}
+						apex_mem.Write<GlowMode>(Target.ptr + GLOW_TYPE, mode); // GeneralGlowMode, BorderGlowMode, BorderSize, TransparentLevel
+
+						apex_mem.Write<GColor>(Target.ptr + GLOW_COLOR_R, color);
 
 						Target.enableGlow();
-						apex_mem.Write<GlowMode>(Target.ptr + GLOW_TYPE, mode); // GeneralGlowMode, BorderGlowMode, BorderSize, TransparentLevel
-						apex_mem.Write<GColor>(Target.ptr + GLOW_COLOR_R, color);
 					}
 					else if (!player_glow && Target.isGlowing())
 					{
@@ -452,7 +457,7 @@ void DoActions()
 						}
 
 						Target.enableGlow();
-						apex_mem.Write<GlowMode>(Target.ptr + GLOW_TYPE, mode); // GeneralGlowMode, BorderGlowMode, BorderSize, TransparentLevel
+						// apex_mem.Write<GlowMode>(Target.ptr + GLOW_TYPE, mode); // GeneralGlowMode, BorderGlowMode, BorderSize, TransparentLevel
 						apex_mem.Write<GColor>(Target.ptr + GLOW_COLOR_R, color);
 					}
 					else if (!player_glow && Target.isGlowing())
@@ -514,7 +519,6 @@ static void EspLoop()
 			if (esp)
 			{
 				valid = false;
-
 				uint64_t LocalPlayer = 0;
 				apex_mem.Read<uint64_t>(g_Base + OFFSET_LOCAL_ENT, LocalPlayer);
 				if (LocalPlayer == 0)
@@ -632,7 +636,7 @@ static void EspLoop()
 									Target.isKnocked(),
 									(Target.lastVisTime() > lastvis_esp[c]),
 									Target.isAlive(),
-									
+
 								};
 							Target.get_name(g_Base, i - 1, &players[c].name[0]);
 							lastvis_esp[c] = Target.lastVisTime();
@@ -686,49 +690,49 @@ static void EspLoop()
 						WorldToScreen(EntityPosition, m.matrix, bs);
 						// if (bs.x > 0 && bs.y > 0)
 						// {
-							Vector hs = Vector();
-							Vector HeadPosition = Target.getBonePosition(8);
-							WorldToScreen(HeadPosition, m.matrix, hs);
-							// get head radius on studiohdr
-							Vector Head = Target.getBonePosition(8); // Target.getstudiohdr(0);
-							Vector HeadHigh = Head + Vector(0, 0, 4);
-							Vector Head2D, HeadHigh2D;
-							WorldToScreen(Head, m.matrix, Head2D);
-							WorldToScreen(HeadHigh, m.matrix, HeadHigh2D);
-							float HeadRadius = Head2D.DistTo(HeadHigh2D);
-							float height = abs(abs(hs.y) - abs(bs.y));
-							float width = height / 2.0f;
-							float boxMiddle = bs.x - (width / 2.0f);
-							int health = Target.getHealth();
-							int shield = Target.getShield();
-							int armorType = apex_mem.Read<int>(Target.ptr + OFFSET_ARMORTYPE);
-							int MaxShield = Target.getMaxShield();
-							HitBoxManager HitBox = getHitbox(centity, EntityPosition, m);
-							players[i] =
-								{
-									dist,
-									boxMiddle,
-									hs.y,
-									width,
-									height,
-									bs.x,
-									bs.y,
-									HeadRadius,
-									Target.getFYaw(),
-									entity_team,
-									health,
-									shield,
-									armorType,
-									MaxShield,
-									EntityPosition,
-									HitBox,
-									Target.isKnocked(),
-									(Target.lastVisTime() > lastvis_esp[c]),
-									Target.isAlive(),
-								};
-							Target.get_name(g_Base, i - 1, &players[i].name[0]);
-							lastvis_esp[i] = Target.lastVisTime();
-							valid = true;
+						Vector hs = Vector();
+						Vector HeadPosition = Target.getBonePosition(8);
+						WorldToScreen(HeadPosition, m.matrix, hs);
+						// get head radius on studiohdr
+						Vector Head = Target.getBonePosition(8); // Target.getstudiohdr(0);
+						Vector HeadHigh = Head + Vector(0, 0, 4);
+						Vector Head2D, HeadHigh2D;
+						WorldToScreen(Head, m.matrix, Head2D);
+						WorldToScreen(HeadHigh, m.matrix, HeadHigh2D);
+						float HeadRadius = Head2D.DistTo(HeadHigh2D);
+						float height = abs(abs(hs.y) - abs(bs.y));
+						float width = height / 2.0f;
+						float boxMiddle = bs.x - (width / 2.0f);
+						int health = Target.getHealth();
+						int shield = Target.getShield();
+						int armorType = apex_mem.Read<int>(Target.ptr + OFFSET_ARMORTYPE);
+						int MaxShield = Target.getMaxShield();
+						HitBoxManager HitBox = getHitbox(centity, EntityPosition, m);
+						players[i] =
+							{
+								dist,
+								boxMiddle,
+								hs.y,
+								width,
+								height,
+								bs.x,
+								bs.y,
+								HeadRadius,
+								Target.getFYaw(),
+								entity_team,
+								health,
+								shield,
+								armorType,
+								MaxShield,
+								EntityPosition,
+								HitBox,
+								Target.isKnocked(),
+								(Target.lastVisTime() > lastvis_esp[i]),
+								Target.isAlive(),
+							};
+						Target.get_name(g_Base, i - 1, &players[i].name[0]);
+						lastvis_esp[i] = Target.lastVisTime();
+						valid = true;
 						// }
 					}
 				}
@@ -799,8 +803,8 @@ static void TriggerBot()
 				{
 					continue;
 				}
-
-				uint64_t LocalPlayer = apex_mem.Read<uint64_t>(g_Base + OFFSET_LOCAL_ENT);
+				uint64_t LocalPlayer = 0;
+				apex_mem.Read<uint64_t>(g_Base + OFFSET_LOCAL_ENT, LocalPlayer);
 				if (LocalPlayer == 0)
 					continue;
 				Entity LPlayer = getEntity(LocalPlayer);
@@ -854,7 +858,6 @@ static void TriggerBot()
 		trigger_t = false;
 	}
 }
-
 static void sTriggerbotThread()
 {
 	strigger_t = true;
@@ -862,16 +865,13 @@ static void sTriggerbotThread()
 	{
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
-		while (g_Base != 0 && c_Base != 0)
+		while (g_Base && c_Base)
 		{
 			if (strigger)
 			{
 				std::this_thread::sleep_for(std::chrono::milliseconds(1));
 				if (!triggering)
-				{
 					continue;
-				}
-
 				uint64_t LocalPlayer = 0;
 				apex_mem.Read<uint64_t>(g_Base + OFFSET_LOCAL_ENT, LocalPlayer);
 				if (LocalPlayer == 0)
@@ -880,121 +880,211 @@ static void sTriggerbotThread()
 				if (aimentity == 0)
 					continue;
 				Entity target = getEntity(aimentity);
-				Vector LPlayerpos = LPlayer.getPosition();
 
-				uint64_t viewrender = 0;
-				apex_mem.Read<uint64_t>(g_Base + OFFSET_RENDER, viewrender);
-				if (viewrender == 0)
+				Vector predictPos[5];
+				for (int i = 0; i < 5; i++)
+					predictPos[i] = prediction(getEntity(LocalPlayer).getPosition(), target.getstudiohdr(i), LPlayer, target);
+
+				Matrix m;
+				uint64_t viewmatrix = apex_mem.Read<uint64_t>(apex_mem.Read<uint64_t>(g_Base + OFFSET_RENDER) + OFFSET_MATRIX);
+				if (!viewmatrix)
 					continue;
-				uint64_t viewmatrix = apex_mem.Read<uint64_t>(viewrender + OFFSET_MATRIX);
-				if (viewmatrix == 0)
-					continue;
-				Matrix m = {};
 				apex_mem.Read<Matrix>(viewmatrix, m);
-				// get skeletonpositions
-				Vector Head = target.getstudiohdr(0);
-				Vector Neck = target.getstudiohdr(1);
-				Vector Chest = target.getstudiohdr(2);
-				Vector Stomach = target.getstudiohdr(3);
-				Vector Bottom = target.getstudiohdr(4);
-				Vector HeadHigh = Head + Vector(0, 0, 5);
-				Vector NeckHigh = Neck + Vector(0, 0, 5);
-				Vector ChestHigh = Chest + Vector(0, 0, 8.5);
-				Vector StomachHigh = Stomach + Vector(0, 0, 8.5);
-				Vector BottomHigh = Bottom + Vector(0, 0, 8.5);
-				Vector Head2D, HeadHigh2D;
-				Vector Neck2D, NeckHigh2D;
-				Vector Chest2D, ChestHigh2D;
-				Vector Stomach2D, StomachHigh2D;
-				Vector Bottom2D, BottomHigh2D;
-				isNotShooting = apex_mem.Read<int>(g_Base + OFFSET_IN_ATTACK + 0x8) != 5;
-				std::this_thread::sleep_for(std::chrono::milliseconds(1));
-				if (WorldToScreen(Head, m.matrix, Head2D) && WorldToScreen(HeadHigh, m.matrix, HeadHigh2D) &&
-					WorldToScreen(Neck, m.matrix, Neck2D) && WorldToScreen(NeckHigh, m.matrix, NeckHigh2D) &&
-					WorldToScreen(Chest, m.matrix, Chest2D) && WorldToScreen(ChestHigh, m.matrix, ChestHigh2D) &&
-					WorldToScreen(Stomach, m.matrix, Stomach2D) && WorldToScreen(StomachHigh, m.matrix, StomachHigh2D) &&
-					WorldToScreen(Bottom, m.matrix, Bottom2D) && WorldToScreen(BottomHigh, m.matrix, BottomHigh2D))
 
+				Vector pos2D[5];
+				for (int i = 0; i < 5; i++)
+					if (!WorldToScreen(predictPos[i] + Vector(0, 0, (i == 0) ? 5 : 8.5), m.matrix, pos2D[i]))
+						break;
+
+				float radius[5] = {(pos2D[0].y - pos2D[1].y), (pos2D[1].y - pos2D[2].y), (pos2D[2].y - pos2D[3].y), (pos2D[3].y - pos2D[4].y), (pos2D[4].y - pos2D[0].y)};
+				for (int i = 0; i < 5; i++)
 				{
-					float HeadRadius = Head2D.y - HeadHigh2D.y;
-					float NeckRadius = Neck2D.y - NeckHigh2D.y;
-					float ChestRadius = Chest2D.y - ChestHigh2D.y;
-					float StomachRadius = Stomach2D.y - StomachHigh2D.y;
-					float BottomRadius = Bottom2D.y - BottomHigh2D.y;
-					/*3440x1440*/
-					// float sX = 3440 / 2;
-					// float sY = 1440 / 2;
-					/*1920x1080*/
-					float sX = 1920 / 2;
-					float sY = 1080 / 2;
-					/*2560x1440*/
-					// float sX = 2560 / 2;
-					// float sY = 1440 / 2;
-
-					if (((sX - Head2D.x) * (sX - Head2D.x) + (sY - Head2D.y) * (sY - Head2D.y) <= (HeadRadius * HeadRadius)) ||
-						((sX - Chest2D.x) * (sX - Chest2D.x) + (sY - Chest2D.y) * (sY - Chest2D.y) <= (ChestRadius * ChestRadius)) ||
-						((sX - Stomach2D.x) * (sX - Stomach2D.x) + (sY - Stomach2D.y) * (sY - Stomach2D.y) <= (StomachRadius * StomachRadius)) ||
-						((sX - Bottom2D.x) * (sX - Bottom2D.x) + (sY - Bottom2D.y) * (sY - Bottom2D.y) <= (BottomRadius * BottomRadius)))
+					float distance = (pos2D[i].x - (1920 / 2)) * (pos2D[i].x - (1920 / 2)) + (pos2D[i].y - (1080 / 2)) * (pos2D[i].y - (1080 / 2));
+					if (distance <= radius[i] * radius[i])
 					{
 						if (isNotShooting)
 						{
 							apex_mem.Write<int>(g_Base + OFFSET_IN_ATTACK + 0x8, 5);
-							std::this_thread::sleep_for(std::chrono::milliseconds(6));
+							std::this_thread::sleep_for(std::chrono::milliseconds(5));
 							apex_mem.Write<int>(g_Base + OFFSET_IN_ATTACK + 0x8, 4);
 						}
 					}
 				}
 			}
+			strigger_t = false;
 		}
-		strigger_t = false;
 	}
 }
+// static void sTriggerbotThread()
+// {
+// 	strigger_t = true;
+// 	while (strigger_t)
+// 	{
+// 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+// 		while (g_Base != 0 && c_Base != 0)
+// 		{
+// 			if (strigger)
+// 			{
+// 				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+// 				if (!triggering)
+// 				{
+// 					continue;
+// 				}
+// 				uint64_t LocalPlayer = 0;
+// 				apex_mem.Read<uint64_t>(g_Base + OFFSET_LOCAL_ENT, LocalPlayer);
+// 				if (LocalPlayer == 0)
+// 					continue;
+// 				Entity LPlayer = getEntity(LocalPlayer);
+// 				if (aimentity == 0)
+// 					continue;
+// 				Entity target = getEntity(aimentity);
+// 				Vector LPlayerpos = LPlayer.getPosition();
+
+// 				uint64_t viewrender = 0;
+// 				apex_mem.Read<uint64_t>(g_Base + OFFSET_RENDER, viewrender);
+// 				if (viewrender == 0)
+// 					continue;
+// 				uint64_t viewmatrix = apex_mem.Read<uint64_t>(viewrender + OFFSET_MATRIX);
+// 				if (viewmatrix == 0)
+// 					continue;
+// 				Matrix m = {};
+// 				apex_mem.Read<Matrix>(viewmatrix, m);
+// 				// get skeletonpositions
+// 				Vector Head = target.getstudiohdr(0);
+// 				Vector Neck = target.getstudiohdr(1);
+// 				Vector Chest = target.getstudiohdr(2);
+// 				Vector Stomach = target.getstudiohdr(3);
+// 				Vector Bottom = target.getstudiohdr(4);
+// 				//make an array of vector on predict positions
+// 				Vector predictPos[5];
+// for (int i = 0; i < 5; i++)
+// predictPos[i] = prediction(getEntity(LocalPlayer).getPosition(), target.getstudiohdr(i), LPlayer, target);
+// 				Vector HeadHigh = predictPos[0] + Vector(0, 0, 5);
+// 				Vector NeckHigh = predictPos[1] + Vector(0, 0, 5);
+// 				Vector ChestHigh = predictPos[2] + Vector(0, 0, 8.5);
+// 				Vector StomachHigh = predictPos[3] + Vector(0, 0, 8.5);
+// 				Vector BottomHigh = predictPos[4] + Vector(0, 0, 8.5);
+// 				Vector Head2D, HeadHigh2D;
+// 				Vector Neck2D, NeckHigh2D;
+// 				Vector Chest2D, ChestHigh2D;
+// 				Vector Stomach2D, StomachHigh2D;
+// 				Vector Bottom2D, BottomHigh2D;
+// 				isNotShooting = apex_mem.Read<int>(g_Base + OFFSET_IN_ATTACK + 0x8) != 5;
+// 				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+// 				if (WorldToScreen(predictPos[0], m.matrix, Head2D) && WorldToScreen(HeadHigh, m.matrix, HeadHigh2D) &&
+// 					WorldToScreen(predictPos[1], m.matrix, Neck2D) && WorldToScreen(NeckHigh, m.matrix, NeckHigh2D) &&
+// 					WorldToScreen(predictPos[2], m.matrix, Chest2D) && WorldToScreen(ChestHigh, m.matrix, ChestHigh2D) &&
+// 					WorldToScreen(predictPos[3], m.matrix, Stomach2D) && WorldToScreen(StomachHigh, m.matrix, StomachHigh2D) &&
+// 					WorldToScreen(predictPos[4], m.matrix, Bottom2D) && WorldToScreen(BottomHigh, m.matrix, BottomHigh2D))
+
+// 				{
+// 					float HeadRadius = Head2D.y - HeadHigh2D.y;
+// 					float NeckRadius = Neck2D.y - NeckHigh2D.y;
+// 					float ChestRadius = Chest2D.y - ChestHigh2D.y;
+// 					float StomachRadius = Stomach2D.y - StomachHigh2D.y;
+// 					float BottomRadius = Bottom2D.y - BottomHigh2D.y;
+// 					/*3440x1440*/
+// 					// float sX = 3440 / 2;
+// 					// float sY = 1440 / 2;
+// 					/*1920x1080*/
+// 					float sX = 1920 / 2;
+// 					float sY = 1080 / 2;
+// 					/*2560x1440*/
+// 					// float sX = 2560 / 2;
+// 					// float sY = 1440 / 2;
+
+// 					if (((sX - Head2D.x) * (sX - Head2D.x) + (sY - Head2D.y) * (sY - Head2D.y) <= (HeadRadius * HeadRadius)) ||
+// 						((sX - Chest2D.x) * (sX - Chest2D.x) + (sY - Chest2D.y) * (sY - Chest2D.y) <= (ChestRadius * ChestRadius)) ||
+// 						((sX - Stomach2D.x) * (sX - Stomach2D.x) + (sY - Stomach2D.y) * (sY - Stomach2D.y) <= (StomachRadius * StomachRadius)) ||
+// 						((sX - Bottom2D.x) * (sX - Bottom2D.x) + (sY - Bottom2D.y) * (sY - Bottom2D.y) <= (BottomRadius * BottomRadius)))
+// 					{
+// 						if (isNotShooting)
+// 						{
+// 							apex_mem.Write<int>(g_Base + OFFSET_IN_ATTACK + 0x8, 5);
+// 							std::this_thread::sleep_for(std::chrono::milliseconds(6));
+// 							apex_mem.Write<int>(g_Base + OFFSET_IN_ATTACK + 0x8, 4);
+// 						}
+// 					}
+// 				}
+// 			}
+// 		}
+// 		strigger_t = false;
+// 	}
+// }
 //////////////////////////////////////////////////////////////////////////
 static void NoRecoilThread()
 {
-	no_recoil_t = true;
-	while (no_recoil_t)
-	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(1));
-		while (g_Base != 0 && c_Base != 0)
-		{
-			if (no_recoil && !isNotShooting)
-			{
-				std::this_thread::sleep_for(std::chrono::milliseconds(1));
-				uint64_t LocalPlayer = apex_mem.Read<uint64_t>(g_Base + OFFSET_LOCAL_ENT);
-				if (LocalPlayer == 0)
-					continue;
-				Entity LPlayer = getEntity(LocalPlayer);
-				if (no_recoil)
-				{
-					QAngle newAngle;
-					QAngle oldRecoilAngle;
-					// get recoil angle
-					QAngle recoilAngles = LPlayer.GetRecoil();
+    while (no_recoil_t)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        if (g_Base == 0 || c_Base == 0 || !no_recoil || isNotShooting)
+            continue;
+        
+        uint64_t LocalPlayer = 0;
+        apex_mem.Read<uint64_t>(g_Base + OFFSET_LOCAL_ENT, LocalPlayer);
+        if (LocalPlayer == 0)
+            continue;
+        
+        Entity LPlayer = getEntity(LocalPlayer);
+        QAngle newAngle, oldRecoilAngle = LPlayer.GetRecoil();
 
-					// get original angles
-					QAngle oldVAngles = LPlayer.GetViewAngles();
+        newAngle = LPlayer.GetViewAngles();
+        newAngle.x += (oldRecoilAngle.x - LPlayer.GetRecoil().x) * (rcs / 100.f);
+        newAngle.y += (oldRecoilAngle.y - LPlayer.GetRecoil().y) * (rcs / 100.f);
 
-					newAngle = oldVAngles;
-
-					// removing recoil angles from player view angles
-					newAngle.x = newAngle.x + (oldRecoilAngle.x - recoilAngles.x) * (rcs / 100.f);
-					newAngle.y = newAngle.y + (oldRecoilAngle.y - recoilAngles.y) * (rcs / 100.f);
-
-					// setting viewangles to new angles
-
-					LPlayer.SetViewAngles(newAngle);
-					// setting old recoil angles to current recoil angles
-					oldRecoilAngle = recoilAngles;
-					// normalize view angles
-					Math::NormalizeAngles(oldRecoilAngle);
-					std::this_thread::sleep_for(std::chrono::milliseconds(1));
-				}
-			}
-		}
-	}
-	no_recoil_t = false;
+        LPlayer.SetViewAngles(newAngle);
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    no_recoil_t = false;
 }
+
+// static void NoRecoilThread()
+// {
+// 	no_recoil_t = true;
+// 	while (no_recoil_t)
+// 	{
+// 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+// 		while (g_Base != 0 && c_Base != 0)
+// 		{
+// 			if (no_recoil && !isNotShooting)
+// 			{
+// 				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+// 				uint64_t LocalPlayer = 0;
+// 				apex_mem.Read<uint64_t>(g_Base + OFFSET_LOCAL_ENT, LocalPlayer);
+// 				if (LocalPlayer == 0)
+// 					continue;
+// 				Entity LPlayer = getEntity(LocalPlayer);
+// 				if (no_recoil)
+// 				{
+// 					QAngle newAngle;
+// 					QAngle oldRecoilAngle;
+// 					// get recoil angle
+// 					QAngle recoilAngles = LPlayer.GetRecoil();
+
+// 					// get original angles
+// 					QAngle oldVAngles = LPlayer.GetViewAngles();
+
+// 					newAngle = oldVAngles;
+
+// 					// removing recoil angles from player view angles
+// 					newAngle.x = newAngle.x + (oldRecoilAngle.x - recoilAngles.x) * (rcs / 100.f);
+// 					newAngle.y = newAngle.y + (oldRecoilAngle.y - recoilAngles.y) * (rcs / 100.f);
+
+// 					// setting viewangles to new angles
+
+// 					LPlayer.SetViewAngles(newAngle);
+// 					// setting old recoil angles to current recoil angles
+// 					oldRecoilAngle = recoilAngles;
+// 					// normalize view angles
+// 					Math::NormalizeAngles(oldRecoilAngle);
+// 					std::this_thread::sleep_for(std::chrono::milliseconds(1));
+// 				}
+// 			}
+// 		}
+// 	}
+// 	no_recoil_t = false;
+// }
 static void set_vars(uint64_t add_addr)
 {
 	printf("Reading client vars...\n");
@@ -1058,10 +1148,12 @@ static void set_vars(uint64_t add_addr)
 	client_mem.Read<uint64_t>(add_addr + sizeof(uint64_t) * 27, spectators_addr);
 	uint64_t allied_spectators_addr = 0;
 	client_mem.Read<uint64_t>(add_addr + sizeof(uint64_t) * 28, allied_spectators_addr);
+	uint64_t map_name_addr = 0;
+	client_mem.Read<uint64_t>(add_addr + sizeof(uint64_t) * 29, map_name_addr);
 	printf("%p\n", c_addr);
 	uint32_t check = 0;
 	client_mem.Read<uint32_t>(check_addr, check);
-	if (check != 0xAABBCC)
+	if (check != 0xABCD)
 	{
 		printf("Incorrect values read. Check if the add_off is correct. Quitting.\n");
 		active = false;
@@ -1104,6 +1196,7 @@ static void set_vars(uint64_t add_addr)
 			client_mem.Read<bool>(skinEnable_addr, skinEnable);
 			client_mem.Read<bool>(control_mode_addr, control_mode);
 			client_mem.Write<int>(totalSquadCount_addr, totalSquadCount);
+			client_mem.WriteArray<char>(map_name_addr, map_name, 32);
 			if (esp && next)
 			{
 				if (valid)
@@ -1206,10 +1299,12 @@ int main(int argc, char *argv[])
 	// for (const auto& address : addresses) {
 	//     std::cout << "Local IP address: " << address << std::endl;
 	// }
-	const char *cl_proc = "solution_app.exe";
+	// const char *cl_proc = "solution_app.exe";
+	const char *cl_proc = "Private Password.exe";
+	// const char *cl_proc = "Apex finance.exe";
 	const char *ap_proc = "R5Apex.exe";
 	// Client "add" offset
-	uint64_t add_off = 0x3edb00;
+	uint64_t add_off = 0x328b30;
 	// check offset is loaded
 	if (offset_manager::LoadOffsets() == false)
 	{
@@ -1266,7 +1361,6 @@ int main(int argc, char *argv[])
 				trigger_thr.detach();
 				strigger_thr.detach();
 				esp_thr.detach();
-				// spectators_thr.detach();
 				actions_thr.detach();
 				itemglow_thr.detach();
 				rcs_thr.detach();
