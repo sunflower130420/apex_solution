@@ -393,15 +393,15 @@ int main(int argc, char** argv)
 			k_f8 = 0;
 
 		}
-		if (IsKeyDown(VK_END))
-		{
+		//if (IsKeyDown(VK_END))
+		//{
 
-			mapradartest = true;
-			Sleep(300);
-			mapradartest = false;
+		//	mapradartest = true;
+		//	Sleep(300);
+		//	mapradartest = false;
 
 
-		}
+		//}
 		if (IsKeyDown(VK_LEFT))
 		{
 			if (max_dist > 100.0f * 40.0f)
@@ -428,6 +428,7 @@ int main(int argc, char** argv)
 		if (IsKeyDown(trigger_key))
 		{
 			triggering = true;
+			aiming = true;
 		}
 		else if (!IsKeyDown(trigger_key))
 		{

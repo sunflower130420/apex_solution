@@ -48,7 +48,7 @@ typedef struct player
 	char name[33];
 } player; //reorder for 0 pading bytes
 
-uint32_t check = 0xAABBCC;
+uint32_t check = 0xABCD;
 int c = 0;
 char map_name[32] = { 0 };
 int aim_key = VK_XBUTTON2;

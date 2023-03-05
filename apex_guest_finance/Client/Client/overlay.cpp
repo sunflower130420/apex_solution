@@ -132,7 +132,7 @@ void UI::RenderMenu()
 			ImGui::SameLine();
 			ImGui::Checkbox(XorStr("aimbot recoil"), &aim_no_recoil);
 			ImGui::SameLine();
-			ImGui::Checkbox(XorStr("rcsNoRecoil"), &no_recoil);
+			ImGui::Checkbox(XorStr("rcs(bugged rn don't use)"), &no_recoil);
 			if (vis_check)
 			{
 				aim = 2;
