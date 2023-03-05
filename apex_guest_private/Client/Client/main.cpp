@@ -81,6 +81,8 @@ bool no_recoil = false;
 bool firing_range = false;
 bool control_mode = false;
 bool mapradartest = false;
+bool armorbaseglow = false;
+bool vischeck_glow = false;
 int totalSquadCount = 0;
 int tmpspec = 0;
 int spectators = 0; //write
@@ -94,7 +96,7 @@ bool cntf = true;
 bool valid = false; // write
 bool next = false;	// read write
 
-uint64_t add[30];
+uint64_t add[32];
 
 bool k_f5 = 0;
 bool k_f6 = 0;
@@ -322,6 +324,8 @@ int main(int argc, char** argv)
 	add[27] = (uintptr_t)&spectators;
 	add[28] = (uintptr_t)&allied_spectators;
 	add[29] = (uintptr_t)&map_name;
+	add[30] = (uintptr_t)&vischeck_glow;
+	add[31] = (uintptr_t)&armorbaseglow;
 	printf(XorStr("add offset: 0x%I64x\n"), (uint64_t)&add[0] - (uint64_t)GetModuleHandle(NULL));
 	UI ov1 = UI();
 	ov1.Start();

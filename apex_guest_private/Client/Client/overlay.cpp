@@ -12,7 +12,8 @@ extern bool no_recoil;
 extern bool firing_range;
 extern bool control_mode;
 extern bool strigger;
-
+extern bool vischeck_glow;
+extern bool armorbaseglow;
 // integer values
 extern int aim;
 extern int wp_skin_id;
@@ -147,6 +148,13 @@ void UI::RenderMenu()
 		}
 		ImGui::Checkbox(XorStr("Glow items"), &item_glow);
 		ImGui::Checkbox(XorStr("Glow players"), &player_glow);
+		if (player_glow)
+		{
+			ImGui::SameLine();
+			ImGui::Checkbox(XorStr("Armor Base Glow"), &armorbaseglow);
+			ImGui::SameLine();
+			ImGui::Checkbox(XorStr("Vischeck Base Glow"), &vischeck_glow);
+		}
 		ImGui::Checkbox(XorStr("Triggerbot"), &strigger);
 		ImGui::Checkbox(XorStr("Firing range"), &firing_range);
 		ImGui::SameLine();
