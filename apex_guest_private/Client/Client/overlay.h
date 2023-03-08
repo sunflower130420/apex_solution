@@ -16,6 +16,11 @@
 #include "vector.h"
 #include "custom.h"
 #include "icon.h"
+#include <fstream>
+#include <iostream>
+#include "json/single_include/nlohmann/json.hpp"
+using json = nlohmann::json;
+
 #pragma comment(lib, "d3d11.lib")
 
 #define GREEN ImColor(0, 255, 0)
@@ -25,6 +30,7 @@
 #define WHITE ImColor(255, 255, 255)
 #define BLACK ImColor(0, 0, 0)
 extern char map_name[32];
+
 typedef struct visuals
 {
 	float SkeltonPx = 1.0f;
@@ -88,3 +94,8 @@ private:
 	bool running;
 	HWND overlayHWND;
 };
+namespace setting
+{
+	void Save(json& j);
+	void Load(json& j);
+}

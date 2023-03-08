@@ -1,5 +1,4 @@
 #pragma once
-
 #include <windows.h>
 #include <time.h>
 #include <fstream>
@@ -45,3 +44,112 @@ ImColor teamColor[] = {
 	ImColor(195, 0, 11)        // 30: Bright Red
 };
 
+class HitBoxManager
+{
+private:
+public:
+	Vector ScreenHeadBone{};
+	Vector ScreenNeckBone{};
+	Vector ScreenChestBone{};
+	Vector ScreenWaistBone{};
+	Vector ScreenBotmBone{};
+
+	Vector ScreenLeftshoulderBone{};
+	Vector ScreenLeftelbowBone{};
+	Vector ScreenLeftHandBone{};
+	Vector ScreenRightshoulderBone{};
+	Vector ScreenRightelbowBone{};
+	Vector ScreenRightHandBone{};
+
+	Vector ScreenLeftThighsBone{};
+	Vector ScreenLeftkneesBone{};
+	Vector ScreenLeftlegBone{};
+	Vector ScreenRightThighsBone{};
+	Vector ScreenRightkneesBone{};
+	Vector ScreenRightlegBone{};
+};
+typedef struct player
+{
+	float dist;
+	float boxMiddle;
+	float h_y;
+	float width;
+	float height;
+	float b_x;
+	float b_y;
+	float HeadRadius;
+	float yaw;
+	int entity_team;
+	int health;
+	int shield;
+	int armorType;
+	int MaxShield;
+	Vector origin;
+	HitBoxManager HitBox;
+	bool knocked;
+	bool visible;
+	bool isAlive;
+	char name[33];
+} player; //reorder for 0 pading bytes
+
+uint32_t check = 0xABCD;
+int c = 0;
+char map_name[32] = { 0 };
+int aim_key = VK_XBUTTON2;
+int trigger_key = VK_XBUTTON1;
+bool use_nvidia = true;
+bool active = true;
+bool ready = false;
+extern visuals v;
+int aim = 0; // read
+bool trigger = false;
+bool strigger = false;
+bool esp = false; // read
+bool item_glow = false;
+bool player_glow = false;
+bool aim_no_recoil = true;
+bool aiming = false; // read
+bool triggering = false;
+uint64_t g_Base = 0;			 // write
+float max_dist = 1500.0f * 40.0f; // read
+float espDist = 400.0f;
+float smooth = 150.0f;
+float max_fov = 15.0f;
+float rcs = 40.f;
+int bone = 1;
+int wp_skin_id;
+int skin_id;
+bool skinEnable = false;
+bool thirdperson = false;
+bool no_recoil = false;
+bool firing_range = false;
+bool control_mode = false;
+bool mapradartest = false;
+bool armorbaseglow = false;
+bool vischeck_glow = false;
+int totalSquadCount = 0;
+int tmpspec = 0;
+int spectators = 0; //write
+int allied_spectators = 0; //write
+
+std::vector<int> spectTeam;
+std::vector<int> teamlist;
+
+int tmpSquad;
+bool cntf = true;
+bool valid = false; // write
+bool next = false;	// read write
+
+uint64_t add[32];
+
+bool k_f5 = 0;
+bool k_f6 = 0;
+bool k_f8 = 0;
+bool k_m = 0;
+bool k_f2 = 0;
+bool map_opened = 0;
+bool rage_mode = false;
+bool IsKeyDown(int vk)
+{
+	return (GetAsyncKeyState(vk) & 0x8000) != 0;
+}

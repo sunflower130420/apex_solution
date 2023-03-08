@@ -107,11 +107,7 @@ typedef struct player
 	bool isAlive = false;
 	char name[33] = {0};
 } player;
-typedef struct spectator
-{
-	int entity_team = 0;
-	char name[33] = {0};
-} spectator;
+player players[toRead];
 float lastvis_esp[toRead];
 float lastvis_aim[toRead];
 int tmp_spec = 0, spectators = 0;
@@ -324,7 +320,7 @@ void DoActions()
 								}
 								if (vischeck_glow)
 								{
-									if (Target.lastVisTime() > lastvis_aim[i])
+									if (players[i].visible)
 									{
 										color = {0.3, 0.3, 0.3}; // White
 									}
@@ -443,45 +439,45 @@ void DoActions()
 								{
 									if (Target.isBleedOut() || !Target.isAlive())
 									{
-										color = {3, 3, 0}; // Downed enemy - Yellow
+										color = {15, 15, 0}; // Downed enemy - Yellow
 									}
 									else
 									{
 										if (shield > 100)
 										{ // Heirloom armor - Red
-											color = {3, 0, 0};
+											color = {15, 0, 0};
 										}
 										else if (shield > 75)
 										{ // Purple armor - Purple
-											color = {1, 0, 2};
+											color = {5, 0, 10};
 										}
 										else if (shield > 50)
 										{ // Blue armor - Light blue
-											color = {0, 1, 2};
+											color = {0, 5, 10};
 										}
 										else if (shield > 0)
 										{ // White armor - White
-											color = {3, 3, 3};
+											color = {15, 15, 15};
 										}
 										else if (health < 50)
 										{ // Above 50% HP - Orange
-											color = {3, 2, 0};
+											color = {15, 10, 0};
 										}
 										else
 										{ // Below 50% HP - Green
-											color = {0, 3, 0};
+											color = {0, 15, 0};
 										}
 									}
 								}
 								if (vischeck_glow)
 								{
-									if (Target.lastVisTime() > lastvis_aim[i])
+									if (players[i].visible)
 									{
-										color = {3, 3, 3}; // White
+										color = {0, 15, 0}; // Green
 									}
 									else
 									{
-										color = {3, 0, 0}; // Red
+										color = {15, 0, 0}; // Red
 									}
 								}
 							}
@@ -537,7 +533,6 @@ void DoActions()
 
 // /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-player players[toRead];
 
 static void EspLoop()
 {
@@ -862,9 +857,6 @@ static void TriggerBot()
 
 				float height = abs(abs(headPos2D.y) - abs(basePos2D.y));
 				float width = height / 3.0f;
-				// printf basePos2D.x basePos2D.y headPos2D.x headPos2D.y
-				// printf("base and head pos %f %f %f %f\n", basePos2D.x, basePos2D.y, headPos2D.x, headPos2D.y);
-				// check bool point_in_box is true or false
 
 				if (basePos2D.x > 0 && basePos2D.y > 0)
 				{
@@ -890,91 +882,6 @@ static void TriggerBot()
 		trigger_t = false;
 	}
 }
-
-// static void sTriggerbotThread()
-// {
-// 	strigger_t = true;
-// 	while (strigger_t)
-// 	{
-// 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
-
-// 		if (g_Base == 0 || c_Base == 0)
-// 			continue;
-
-// 		if (!strigger || !triggering)
-// 			continue;
-
-// 		uint64_t LocalPlayer, viewrender;
-// 		apex_mem.Read<uint64_t>(g_Base + OFFSET_LOCAL_ENT, LocalPlayer);
-// 		apex_mem.Read<uint64_t>(g_Base + OFFSET_RENDER, viewrender);
-
-// 		if (LocalPlayer == 0 || viewrender == 0)
-// 			continue;
-
-// 		uint64_t viewmatrix = apex_mem.Read<uint64_t>(viewrender + OFFSET_MATRIX);
-
-// 		if (viewmatrix == 0)
-// 			continue;
-
-// 		Matrix m = {};
-// 		apex_mem.Read<Matrix>(viewmatrix, m);
-
-// 		Entity LPlayer = getEntity(LocalPlayer);
-// 		Entity target = getEntity(aimentity);
-// 		Vector LPlayerpos = LPlayer.getPosition();
-
-// 		Vector SkeletonPositions[] = {
-// 			target.getstudiohdr(0),
-// 			target.getstudiohdr(1),
-// 			target.getstudiohdr(2),
-// 			target.getstudiohdr(3),
-// 			target.getstudiohdr(4)};
-
-// 		Vector SkeletonPositionsHigh[] = {
-// 			SkeletonPositions[0] + Vector(0, 0, 5),
-// 			SkeletonPositions[1] + Vector(0, 0, 5),
-// 			SkeletonPositions[2] + Vector(0, 0, 8.5),
-// 			SkeletonPositions[3] + Vector(0, 0, 8.5),
-// 			SkeletonPositions[4] + Vector(0, 0, 8.5)};
-
-// 		float Radii[] = {
-// 			(SkeletonPositions[0].y - SkeletonPositionsHigh[0].y),
-// 			(SkeletonPositions[1].y - SkeletonPositionsHigh[1].y),
-// 			(SkeletonPositions[2].y - SkeletonPositionsHigh[2].y),
-// 			(SkeletonPositions[3].y - SkeletonPositionsHigh[3].y),
-// 			(SkeletonPositions[4].y - SkeletonPositionsHigh[4].y)};
-
-// 		float sX = 1920 / 2;
-// 		float sY = 1080 / 2;
-
-// 		for (int i = 0; i < 5; i++)
-// 		{
-// 			Vector Skeleton2D, SkeletonHigh2D;
-
-// 			if (!WorldToScreen(SkeletonPositions[i], m.matrix, Skeleton2D) ||
-// 				!WorldToScreen(SkeletonPositionsHigh[i], m.matrix, SkeletonHigh2D))
-// 				continue;
-
-// 			float radiusSquared = Radii[i] * Radii[i];
-// 			float xDiff = sX - Skeleton2D.x;
-// 			float yDiff = sY - Skeleton2D.y;
-// 			float distanceSquared = xDiff * xDiff + yDiff * yDiff;
-
-// 			if (distanceSquared <= radiusSquared)
-// 			{
-// 				isNotShooting = apex_mem.Read<int>(g_Base + OFFSET_IN_ATTACK + 0x8) != 5;
-
-// 				if (isNotShooting)
-// 				{
-// 					apex_mem.Write<int>(g_Base + OFFSET_IN_ATTACK + 0x8, 5);
-// 					std::this_thread::sleep_for(std::chrono::milliseconds(6));
-// 					apex_mem.Write<int>(g_Base + OFFSET_IN_ATTACK + 0x8, 4);
-// 				}
-// 			}
-// 		}
-// 		strigger_t = false;
-// 	}
-// }
 static void sTriggerbotThread()
 {
 	strigger_t = true;
