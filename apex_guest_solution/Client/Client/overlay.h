@@ -17,6 +17,10 @@
 #include "vector.h"
 #include "custom.h"
 #include "icon.h"
+#include <fstream>
+#include <iostream>
+#include "json/single_include/nlohmann/json.hpp"
+using json = nlohmann::json;
 #pragma comment(lib, "d3d11.lib")
 
 #define GREEN ImColor(0, 255, 0)
@@ -90,3 +94,8 @@ private:
 	bool running;
 	HWND overlayHWND;
 };
+namespace setting
+{
+	void Save(json& j);
+	void Load(json& j);
+}

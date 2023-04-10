@@ -45,3 +45,5 @@ ImColor teamColor[] = {
 	ImColor(195, 0, 11)        // 30: Bright Red
 };
 
+bool armorbaseglow = false;
+bool vischeck_glow = false;

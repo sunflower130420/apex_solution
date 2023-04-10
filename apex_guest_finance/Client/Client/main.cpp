@@ -94,7 +94,7 @@ bool cntf = true;
 bool valid = false; // write
 bool next = false;	// read write
 
-uint64_t add[31];
+
 
 bool k_f5 = 0;
 bool k_f6 = 0;
@@ -289,40 +289,42 @@ void UI::WindowInfo()
 	}
 	ImGui::End();
 }
-
+uint64_t add[32];
 int main(int argc, char** argv)
 {
-	add[0] = (uintptr_t)&check;
-	add[1] = (uintptr_t)&aim;
-	add[2] = (uintptr_t)&esp;
-	add[3] = (uintptr_t)&aiming;
-	add[4] = (uintptr_t)&g_Base;
-	add[5] = (uintptr_t)&next;
-	add[6] = (uintptr_t)&players[0];
-	add[7] = (uintptr_t)&valid;
-	add[8] = (uintptr_t)&max_dist;
-	add[9] = (uintptr_t)&item_glow;
-	add[10] = (uintptr_t)&player_glow;
-	add[11] = (uintptr_t)&aim_no_recoil;
-	add[12] = (uintptr_t)&smooth;
-	add[13] = (uintptr_t)&max_fov;
-	add[14] = (uintptr_t)&bone;
-	add[15] = (uintptr_t)&trigger;
-	add[16] = (uintptr_t)&triggering;
-	add[17] = (uintptr_t)&rcs;
-	add[18] = (uintptr_t)&no_recoil;
-	add[19] = (uintptr_t)&firing_range;
-	add[20] = (uintptr_t)&wp_skin_id;
-	add[21] = (uintptr_t)&strigger;
-	add[22] = (uintptr_t)&c;
-	add[23] = (uintptr_t)&skin_id;
-	add[24] = (uintptr_t)&skinEnable;
-	add[25] = (uintptr_t)&control_mode;
-	add[26] = (uintptr_t)&totalSquadCount;
-	add[27] = (uintptr_t)&spectators;
-	add[28] = (uintptr_t)&allied_spectators;
-	add[29] = (uintptr_t)&map_name;
-	add[30] = (uintptr_t)&mapradartest;
+	
+	add[0]   =  (uintptr_t)&check;
+	add[1]   =  (uintptr_t)&aim;
+	add[2]   =  (uintptr_t)&esp;
+	add[3]   =  (uintptr_t)&aiming;
+	add[4]   =  (uintptr_t)&g_Base;
+	add[5]   =  (uintptr_t)&next;
+	add[6]   =  (uintptr_t)&players[0];
+	add[7]   =  (uintptr_t)&valid;
+	add[8]   =  (uintptr_t)&max_dist;
+	add[9]   =  (uintptr_t)&item_glow;
+	add[10]  =  (uintptr_t)&player_glow;
+	add[11]  =  (uintptr_t)&aim_no_recoil;
+	add[12]  =  (uintptr_t)&smooth;
+	add[13]  =  (uintptr_t)&max_fov;
+	add[14]  =  (uintptr_t)&bone;
+	add[15]  =  (uintptr_t)&trigger;
+	add[16]  =  (uintptr_t)&triggering;
+	add[17]  =  (uintptr_t)&rcs;
+	add[18]  =  (uintptr_t)&no_recoil;
+	add[19]  =  (uintptr_t)&firing_range;
+	add[20]  =  (uintptr_t)&wp_skin_id;
+	add[21]  =  (uintptr_t)&strigger;
+	add[22]  =  (uintptr_t)&c;
+	add[23]  =  (uintptr_t)&skin_id;
+	add[24]  =  (uintptr_t)&skinEnable;
+	add[25]  =  (uintptr_t)&control_mode;
+	add[26]  =  (uintptr_t)&totalSquadCount;
+	add[27]  =  (uintptr_t)&spectators;
+	add[28]  =  (uintptr_t)&allied_spectators;
+	add[29]  =  (uintptr_t)&map_name;
+	add[30]  =  (uintptr_t)&vischeck_glow;
+	add[31]  =  (uintptr_t)&armorbaseglow;
 	printf(XorStr("add offset: 0x%I64x\n"), (uint64_t)&add[0] - (uint64_t)GetModuleHandle(NULL));
 	UI ov1 = UI();
 	ov1.Start();

@@ -12,7 +12,11 @@ extern bool no_recoil;
 extern bool firing_range;
 extern bool control_mode;
 extern bool strigger;
-
+static bool aim_enable = false;
+static bool vis_check = false;
+extern bool armorbaseglow;
+extern bool vischeck_glow;
+json j;
 // integer values
 extern int aim;
 extern int wp_skin_id;
@@ -85,8 +89,7 @@ void CleanupRenderTarget();
 
 void UI::RenderMenu()
 {
-	static bool aim_enable = false;
-	static bool vis_check = false;
+	
 	if (aim > 0)
 	{
 		aim_enable = true;
@@ -116,6 +119,10 @@ void UI::RenderMenu()
 		v.tab = 2;
 	if (ImGui::Button(XorStr("Config"), ImVec2(110, 0)))
 		v.tab = 3;
+	if (ImGui::Button(XorStr("Save"), ImVec2(110, 0)))
+		setting::Save(j);
+	if (ImGui::Button(XorStr("Load"), ImVec2(110, 0)))
+		setting::Load(j);
 	// right side
 	ImGui::NextColumn();
 	switch (v.tab)
@@ -1011,7 +1018,91 @@ void UI::drawPlayerOnFullRadar(float x, float y, ImColor color, float yaw, int t
 
 
 }
+void setting::Save(json& j)
+{
+	std::ofstream file("config.json");
+	j = {
+   {"esp", esp},
+   {"aim_enable", aim_enable},
+   {"vis_check", vis_check},
+   {"aim_no_recoil", aim_no_recoil},
+   {"no_recoil", no_recoil},
+   {"aim", aim},
+   {"item_glow", item_glow},
+   {"player_glow", player_glow},
+   {"armorbaseglow", armorbaseglow},
+   {"vischeck_glow", vischeck_glow},
+   {"strigger", strigger},
+   {"firing_range", firing_range},
+   {"control_mode", control_mode},
+   {"v.box", v.box},
+   {"v.cornerbox", v.cornerbox},
+   {"v.name", v.name},
+   {"v.line", v.line},
+   {"v.skeleton", v.skeleton},
+   {"v.distance", v.distance},
+   {"v.seerbar", v.seerbar},
+   {"v.simplespec", v.simplespec},
+   {"v.healthbar", v.healthbar},
+   {"v.shieldbar", v.shieldbar},
+   {"espDist", espDist},
+   {"smooth", smooth},
+   {"v.FOV", v.FOV},
+   {"max_fov", max_fov},
+   {"bone", bone},
+   {"rcs", rcs}
+	};
+	if (file.is_open())
+	{
+		file << j;
+	}
+	else {
+		std::cout << XorStr("Unable to save config") << std::endl;
+	}
 
+}
+
+void setting::Load(json& j)
+{
+	std::ifstream file("config.json");
+	if (file.is_open())
+	{
+		file >> j;
+	}
+	else {
+		std::cout << XorStr("Unable to load config") << std::endl;
+	}
+	j.at("esp").get_to(esp);
+	j.at("aim_enable").get_to(aim_enable);
+	j.at("vis_check").get_to(vis_check);
+	j.at("aim_no_recoil").get_to(aim_no_recoil);
+	j.at("no_recoil").get_to(no_recoil);
+	j.at("aim").get_to(aim);
+	j.at("item_glow").get_to(item_glow);
+	j.at("player_glow").get_to(player_glow);
+	j.at("armorbaseglow").get_to(armorbaseglow);
+	j.at("vischeck_glow").get_to(vischeck_glow);
+	j.at("strigger").get_to(strigger);
+	j.at("firing_range").get_to(firing_range);
+	j.at("control_mode").get_to(control_mode);
+	j.at("v.box").get_to(v.box);
+	j.at("v.cornerbox").get_to(v.cornerbox);
+	j.at("v.name").get_to(v.name);
+	j.at("v.line").get_to(v.line);
+	j.at("v.skeleton").get_to(v.skeleton);
+	j.at("v.distance").get_to(v.distance);
+	j.at("v.seerbar").get_to(v.seerbar);
+	j.at("v.simplespec").get_to(v.simplespec);
+	j.at("v.healthbar").get_to(v.healthbar);
+	j.at("v.shieldbar").get_to(v.shieldbar);
+	j.at("espDist").get_to(espDist);
+	j.at("smooth").get_to(smooth);
+	j.at("v.FOV").get_to(v.FOV);
+	j.at("max_fov").get_to(max_fov);
+	j.at("bone").get_to(bone);
+	j.at("rcs").get_to(rcs);
+
+}
 
 
 

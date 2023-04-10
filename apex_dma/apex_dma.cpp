@@ -1,117 +1,7 @@
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <string.h>
-#include <random>
-#include <chrono>
-#include <iostream>
-#include <cfloat>
-#include "Game.h"
-#include <thread>
-#include <stdlib.h>
-#include <algorithm>
-#include "ip_checker.h"
-Memory apex_mem;
-Memory client_mem;
-struct Box
-{
-	Vector2D topLeft;
-	Vector2D bottomRight;
-};
-
-// const Vector2D crosshairPos = Vector2D(1920 / 2, 1080 / 2);
-const Vector2D crosshairPos = Vector2D(1920 / 2, 1080 / 2);
-// check if the crosshair  is in the box
-inline bool is_point_in_box(Box &box)
-{
-	return (crosshairPos.x >= box.topLeft.x && crosshairPos.x <= box.bottomRight.x && crosshairPos.y >= box.topLeft.y && crosshairPos.y <= box.bottomRight.y);
-}
-int wp_skin_id;
-int skin_id;
-float rcs = 40.f;
-bool firing_range = false;
-bool control_mode = false;
-bool active = true;
-uintptr_t aimentity = 0;
-uintptr_t tmp_aimentity = 0;
-uintptr_t lastaimentity = 0;
-float max = 999.0f;
-float max_dist = 200.0f * 40.0f;
-float map_dist = 2000.0f * 40.0f;
-int team_player = 0;
-float max_fov = 15;
-const int toRead = 100;
-int aim = false;
-bool trigger = false;
-bool strigger = false;
-bool esp = false;
-bool radar = false;
-bool spectator_list = false;
-bool item_glow = false;
-bool player_glow = false;
-bool isAlive = false;
-bool no_recoil = false;
-bool isNotShooting = false;
-extern bool aim_no_recoil;
-bool aiming = false;
-bool triggering = false;
-extern float smooth;
-extern int bone;
-bool thirdperson = false;
-// make std vector call teamsquad
-std::vector<int> teamsquad;
-std::vector<int> teamsquad_tmp;
-int teamsquad_size = 0;
-bool actions_t = false;
-bool esp_t = false;
-bool radar_t = false;
-bool spectators_t = false;
-bool spectatorlist_t = false;
-bool aim_t = false;
-bool trigger_t = false;
-bool strigger_t = false;
-bool vars_t = false;
-bool item_t = false;
-bool no_recoil_t = false;
-uint64_t g_Base;
-uint64_t c_Base;
-bool next = false;
-bool valid = false;
-bool lock = false;
-int totalEntityCount = 0;
-int totalSquadCount = 0;
-bool skinEnable = false;
-char map_name[32] = {0};
-bool armorbaseglow = false;
-bool vischeck_glow = false;
-typedef struct player
-{
-	float dist = 0;
-	float boxMiddle = 0;
-	float h_y = 0;
-	float width = 0;
-	float height = 0;
-	float b_x = 0;
-	float b_y = 0;
-	float HeadRadius = 0;
-	float yaw = 0;
-	int entity_team = 0;
-	int health = 0;
-	int shield = 0;
-	int armorType = 0;
-	int MaxShield = 0;
-	Vector origin = Vector(0, 0, 0);
-	HitBoxManager HitBox;
-	bool knocked = false;
-	bool visible = false;
-	bool isAlive = false;
-	char name[33] = {0};
-} player;
-player players[toRead];
-float lastvis_esp[toRead];
-float lastvis_aim[toRead];
-int tmp_spec = 0, spectators = 0;
-int tmp_all_spec = 0, allied_spectators = 0;
+#include "include.h"
+using namespace ThreadsManager;
+using namespace spectatorlist;
+using namespace config;
 void changeSkin_wp(uint64_t LocalPlayer)
 {
 	if (wp_skin_id < 0)
@@ -288,46 +178,47 @@ void DoActions()
 								{
 									if (Target.isBleedOut() || !Target.isAlive())
 									{
-										color = {0.3, 0.3, 0}; // Downed enemy - Yellow
+										color = {5, 5, 0}; // Downed enemy - Yellow (15/3 = 5)
 									}
 									else
 									{
 										if (shield > 100)
-										{ // Heirloom armor - Red
-											color = {0.3, 0, 0};
+										{					   // Heirloom armor - Red
+											color = {5, 0, 0}; // (15/3 = 5)
 										}
 										else if (shield > 75)
-										{ // Purple armor - Purple
-											color = {0.1, 0, 0.2};
+										{					   // Purple armor - Purple
+											color = {1, 0, 3}; // (5/3 = 1.666 => 1)
 										}
 										else if (shield > 50)
-										{ // Blue armor - Light blue
-											color = {0, 0.1, 0.2};
+										{					   // Blue armor - Light blue
+											color = {0, 1, 3}; // (5/3 = 1.666 => 1)
 										}
 										else if (shield > 0)
-										{ // White armor - White
-											color = {0.3, 0.3, 0.3};
+										{					   // White armor - White
+											color = {5, 5, 5}; // (15/3 = 5)
 										}
 										else if (health < 50)
-										{ // Above 50% HP - Orange
-											color = {0.3, 0.2, 0};
+										{					   // Above 50% HP - Orange
+											color = {5, 3, 0}; // (15/3 = 5)
 										}
 										else
-										{ // Below 50% HP - Green
-											color = {0, 0.3, 0};
+										{					   // Below 50% HP - Green
+											color = {0, 5, 0}; // (15/3 = 5)
 										}
 									}
 								}
 								if (vischeck_glow)
 								{
-									if (players[i].visible)
+									if (Target.lastVisTime() > lastvis_esp[i])
 									{
-										color = {0.3, 0.3, 0.3}; // White
+										color = {0, 5, 0}; // Green (15/3 = 5)
 									}
 									else
 									{
-										color = {0.3, 0, 0}; // Red
+										color = {5, 0, 15}; // Red (15/3 = 5)
 									}
+									lastvis_esp[i] = Target.lastVisTime();
 								}
 							}
 						}
@@ -382,18 +273,6 @@ void DoActions()
 					int entity_team = Target.getTeamId();
 					int health = Target.getHealth();
 					int shield = Target.getShield();
-					if (entity_team > 0 && entity_team < 50)
-					{
-
-						// store entity_team in vector teamsquad
-						if (!(std::find(teamsquad_tmp.begin(), teamsquad_tmp.end(), entity_team) != teamsquad_tmp.end()))
-						{
-							teamsquad_tmp.push_back(entity_team);
-							// clear duplicates int vector teamsquad
-							std::sort(teamsquad_tmp.begin(), teamsquad_tmp.end());
-							teamsquad_tmp.erase(std::unique(teamsquad_tmp.begin(), teamsquad_tmp.end()), teamsquad_tmp.end());
-						}
-					}
 					if (control_mode)
 					{
 						if (entity_team % 2)
@@ -413,6 +292,19 @@ void DoActions()
 							team_player = 2;
 						}
 					}
+					if (entity_team > 0 && entity_team < 50)
+					{
+
+						// store entity_team in vector teamsquad
+						if (!(std::find(teamsquad_tmp.begin(), teamsquad_tmp.end(), entity_team) != teamsquad_tmp.end()))
+						{
+							teamsquad_tmp.push_back(entity_team);
+							// clear duplicates int vector teamsquad
+							std::sort(teamsquad_tmp.begin(), teamsquad_tmp.end());
+							teamsquad_tmp.erase(std::unique(teamsquad_tmp.begin(), teamsquad_tmp.end()), teamsquad_tmp.end());
+						}
+					}
+
 					if (entity_team == team_player)
 					{
 
@@ -427,7 +319,7 @@ void DoActions()
 						int glow_flags = (entityVisible << 6) | state & 0x3F | (afterPostProcess << 7);
 						BYTE glow_flags2 = reinterpret_cast<BYTE &>(glow_flags);
 						float currentEntityTime = 60000.f;			// ADDED currentEntityTime
-						GlowMode mode = {101, 102, 5, glow_flags2}; // { 101,102,50,75 }; //GeneralGlowMode, BorderGlowMode, BorderSize, TransparentLevel
+						GlowMode mode = {101, 102, 0, glow_flags2}; // { 101,102,50,75 }; //GeneralGlowMode, BorderGlowMode, BorderSize, TransparentLevel
 						GColor color;
 
 						if ((int)Target.buffer[OFFSET_GLOW_ENABLE] != 1 || (int)Target.buffer[OFFSET_GLOW_THROUGH_WALLS] != 1 || (int)Target.buffer[OFFSET_GLOW_FADE] != 872415232)
@@ -439,33 +331,33 @@ void DoActions()
 								{
 									if (Target.isBleedOut() || !Target.isAlive())
 									{
-										color = {15, 15, 0}; // Downed enemy - Yellow
+										color = {5, 5, 0}; // Downed enemy - Yellow (15/3 = 5)
 									}
 									else
 									{
 										if (shield > 100)
-										{ // Heirloom armor - Red
-											color = {15, 0, 0};
+										{					   // Heirloom armor - Red
+											color = {5, 0, 0}; // (15/3 = 5)
 										}
 										else if (shield > 75)
-										{ // Purple armor - Purple
-											color = {5, 0, 10};
+										{					   // Purple armor - Purple
+											color = {1, 0, 3}; // (5/3 = 1.666 => 1)
 										}
 										else if (shield > 50)
-										{ // Blue armor - Light blue
-											color = {0, 5, 10};
+										{					   // Blue armor - Light blue
+											color = {0, 1, 3}; // (5/3 = 1.666 => 1)
 										}
 										else if (shield > 0)
-										{ // White armor - White
-											color = {15, 15, 15};
+										{					   // White armor - White
+											color = {5, 5, 5}; // (15/3 = 5)
 										}
 										else if (health < 50)
-										{ // Above 50% HP - Orange
-											color = {15, 10, 0};
+										{					   // Above 50% HP - Orange
+											color = {5, 3, 0}; // (15/3 = 5)
 										}
 										else
-										{ // Below 50% HP - Green
-											color = {0, 15, 0};
+										{					   // Below 50% HP - Green
+											color = {0, 5, 0}; // (15/3 = 5)
 										}
 									}
 								}
@@ -473,11 +365,11 @@ void DoActions()
 								{
 									if (players[i].visible)
 									{
-										color = {0, 15, 0}; // Green
+										color = {0, 5, 0}; // Green (15/3 = 5)
 									}
 									else
 									{
-										color = {15, 0, 0}; // Red
+										color = {5, 0, 0}; // Red (15/3 = 5)
 									}
 								}
 							}
@@ -532,7 +424,6 @@ void DoActions()
 }
 
 // /////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 static void EspLoop()
 {
@@ -976,33 +867,6 @@ static void sTriggerbotThread()
 		strigger_t = false;
 	}
 }
-//////////////////////////////////////////////////////////////////////////
-// static void NoRecoilThread()
-// {
-// 	no_recoil_t = true;
-// 	while (no_recoil_t)
-// 	{
-// 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
-// 		if (g_Base == 0 || c_Base == 0 || !no_recoil || isNotShooting)
-// 			continue;
-
-// 		uint64_t LocalPlayer = 0;
-// 		apex_mem.Read<uint64_t>(g_Base + OFFSET_LOCAL_ENT, LocalPlayer);
-// 		if (LocalPlayer == 0)
-// 			continue;
-
-// 		Entity LPlayer = getEntity(LocalPlayer);
-// 		QAngle newAngle, oldRecoilAngle = LPlayer.GetRecoil();
-
-// 		newAngle = LPlayer.GetViewAngles();
-// 		newAngle.x += (oldRecoilAngle.x - LPlayer.GetRecoil().x) * (rcs / 100.f);
-// 		newAngle.y += (oldRecoilAngle.y - LPlayer.GetRecoil().y) * (rcs / 100.f);
-
-// 		LPlayer.SetViewAngles(newAngle);
-// 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
-// 		no_recoil_t = false;
-// 	}
-// }
 
 static void NoRecoilThread()
 {
@@ -1266,18 +1130,24 @@ int main(int argc, char *argv[])
 		printf("Error: %s is not running as root\n", argv[0]);
 		return 0;
 	}
-	// std::vector<std::string> addresses = getlocal_IP_Address();
-	// for (const auto& address : addresses) {
-	//     std::cout << "Local IP address: " << address << std::endl;
-	// }
 	// const char *cl_proc = "solution_app.exe";
 	const char *cl_proc = "Private Password.exe";
 	// const char *cl_proc = "Apex finance.exe";
 	const char *ap_proc = "R5Apex.exe";
 	// Client "add" offset
-	uint64_t add_off = 0x325b70;
+	uint64_t add_off = 0x429eb0;
+	std::string date = "2023-05-06";
+	if (offset_manager::DateCheck(date))
+	{
+		printf("Error: Offset is outdated\n");
+		return 0;
+	}
+	// if (offset_manager::IpCheck()){
+	// 	printf("Error: IP is outdated\n");
+	// 	return 0;
+	// }
 	// check offset is loaded
-	if (offset_manager::LoadOffsets() == false)
+	if (!offset_manager::LoadOffsets())
 	{
 		printf("Error: Failed to load offsets\n");
 		return 0;

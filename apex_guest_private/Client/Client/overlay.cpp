@@ -1095,6 +1095,13 @@ void setting::Save(json& j)
 void setting::Load(json& j)
 {
 	std::ifstream file("config.json");
+	if (file.is_open())
+	{
+		file >> j;
+	}
+	else {
+		std::cout << XorStr("Unable to load config") << std::endl;
+	}
 	j.at("esp").get_to(esp);
 	j.at("aim_enable").get_to(aim_enable);
 	j.at("vis_check").get_to(vis_check);
@@ -1124,11 +1131,5 @@ void setting::Load(json& j)
 	j.at("max_fov").get_to(max_fov);
 	j.at("bone").get_to(bone);
 	j.at("rcs").get_to(rcs);
-	if (file.is_open())
-	{
-		file >> j;
-	}
-	else {
-		std::cout << XorStr("Unable to load config") << std::endl;
-	}
+
 }

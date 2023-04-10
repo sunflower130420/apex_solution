@@ -202,13 +202,10 @@
     IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
     CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-
+#pragma once
 #ifndef INCLUDED_SimpleIni_h
 #define INCLUDED_SimpleIni_h
 
-#if defined(_MSC_VER) && (_MSC_VER >= 1020)
-# pragma once
-#endif
 
 // Disable these warnings in MSVC:
 //  4127 "conditional expression is constant" as the conversion classes trigger
@@ -981,6 +978,13 @@ public:
         @return a_nDefault      Key was not found in the section
         @return other           Value of the key
      */
+    std::string GetStringValue(
+        const SI_CHAR * a_pSection,
+        const SI_CHAR * a_pKey,
+        const SI_CHAR * a_pDefault     = NULL,
+        bool *          a_pHasMultiple = NULL
+        ) const;
+
     bool GetBoolValue(
         const SI_CHAR * a_pSection,
         const SI_CHAR * a_pKey,
@@ -2226,7 +2230,29 @@ CSimpleIniTempl<SI_CHAR,SI_STRLESS,SI_CONVERTER>::SetLongValue(
     // actually add it
     return AddEntry(a_pSection, a_pKey, szOutput, a_pComment, a_bForceReplace, true);
 }
+template<class SI_CHAR, class SI_STRLESS, class SI_CONVERTER>
+std::string
+CSimpleIniTempl<SI_CHAR,SI_STRLESS,SI_CONVERTER>::GetStringValue(
+    const SI_CHAR * a_pSection,
+    const SI_CHAR * a_pKey,
+    const SI_CHAR * a_pDefault,
+    bool *          a_pHasMultiple
+    ) const
+{
+    // return the default if we don't have a value
+    const SI_CHAR * pszValue = GetValue(a_pSection, a_pKey, NULL, a_pHasMultiple);
+    if (!pszValue || !*pszValue) return a_pDefault;
 
+    // convert to UTF-8/MBCS which for a numeric value will be the same as ASCII
+    char szValue[64] = { 0 };
+    SI_CONVERTER c(m_bStoreIsUtf8);
+    if (!c.ConvertToStore(pszValue, szValue, sizeof(szValue))) {
+        return a_pDefault;
+    }
+    // convert the char array to std::string
+    std::string strValue(szValue);
+    return strValue;
+}
 template<class SI_CHAR, class SI_STRLESS, class SI_CONVERTER>
 double
 CSimpleIniTempl<SI_CHAR,SI_STRLESS,SI_CONVERTER>::GetDoubleValue(

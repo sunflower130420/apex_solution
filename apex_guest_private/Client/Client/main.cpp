@@ -232,12 +232,13 @@ int main(int argc, char** argv)
 	{
 		ready = true;
 		printf(XorStr("Ready\n"));
+		printf(XorStr("Press F4 to turn off overlay\n"));
 		
 	}
 
 	while (active)
 	{
-		printf(XorStr("Press F4 to turn off overlay\n"));
+		
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 		if (IsKeyDown(VK_F4))
 		{

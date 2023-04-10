@@ -6,8 +6,7 @@
 #include <vector>
 #include <string>
 
-
-std::vector<std::string> getlocal_IP_Address()
+inline std::vector<std::string> get_IP_Address()
 {
     std::vector<std::string> addresses;
     struct ifaddrs* ifAddrStruct = NULL;

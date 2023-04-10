@@ -1,11 +1,14 @@
 #pragma once
 #include <SimpleIni.h>
 #include "offsets.h"
+#include <sstream>
+#include "ip_checker.h"
 using namespace offsets;
 namespace offset_manager
 {
     inline bool LoadOffsets();
-
+    inline bool DateCheck(std::string date);
+    inline bool IpCheck();
 };
 
 bool offset_manager::LoadOffsets()
@@ -25,7 +28,7 @@ bool offset_manager::LoadOffsets()
         printf("Failed to load cl_entitylist offset\n");
         success = false;
     }
-    offsets::OFFSET_LOCAL_ENT = ini.GetLongValue("Globals", ".?AVC_GameMovement@@", 0)+0x8;
+    offsets::OFFSET_LOCAL_ENT = ini.GetLongValue("Miscellaneous", "LocalPlayer", 0)+0x8;
     printf("LocalPlayer: %#08x \n", offsets::OFFSET_LOCAL_ENT);
     if (offsets::OFFSET_LOCAL_ENT == 0)
     {
@@ -270,8 +273,65 @@ bool offset_manager::LoadOffsets()
     //     printf("Failed to load ClientName offset\n");
     //     success = false;
     // }
+
     OFFSET_FPITCH = OFFSET_FYAW - 0x4;
     OFFSET_FROLL = OFFSET_FYAW + 0x4;
     OFFSET_BREATH_ANGLES = OFFSET_VIEWANGLES - 0x10;
     return true;
+}
+bool offset_manager::DateCheck(std::string date)
+{
+    //get the current date
+    time_t now = time(0);
+    tm *ltm = localtime(&now);
+    int year = 1900 + ltm->tm_year;
+    int month = 1 + ltm->tm_mon;
+    int day = ltm->tm_mday;
+    //compare the current date to the date in the argument if the current date is pass the date in the argument return true
+    if(year > std::stoi(date.substr(0, 4)))
+    {
+        return true;
+    }
+    else if(year == std::stoi(date.substr(0, 4)))
+    {
+        if(month > std::stoi(date.substr(5, 2)))
+        {
+            return true;
+        }
+        else if(month == std::stoi(date.substr(5, 2)))
+        {
+            if(day >= std::stoi(date.substr(8, 2)))
+            {
+                return true;
+            }
+        }
+    }
+    // Add a return statement to cover all possible paths
+    return false;
+}
+bool offset_manager::IpCheck() {
+	// for (const auto& address : addresses) {
+	//     std::cout << "Local IP address: " << address << std::endl;
+	// }
+    bool status;
+    CSimpleIniA ini;
+    ini.SetUnicode();
+    ini.LoadFile("stdout.ini");
+    std::string ip = ini.GetStringValue("Interfaces", "LocalIP", "");
+    if (ip == "") {
+        std::ostringstream oss;
+        for (const auto& address : get_IP_Address()) {
+            oss << address << std::endl;
+        }
+        std::string ip = oss.str();
+        ini.SetValue("Interfaces", "LocalIP", ip.c_str());
+        status = true;
+    }
+    else if (ip == ini.GetStringValue("Interfaces", "LocalIP", "")) {
+        status = true;
+    }
+    else {
+        status = false;
+    }
+    return status;
 }
